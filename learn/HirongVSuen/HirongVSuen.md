@@ -3,4 +3,4 @@
 - 微信：MyAnt91 
 - Aleo 钱包地址：    
 - 技术栈：  java、rust、devops
-- 自我介绍：11年java开发，现在再转rust开发
+- 自我介绍：11年java开发，现在在转rust开发
