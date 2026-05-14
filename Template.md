@@ -2,5 +2,5 @@
 - GitHub 用户名：houseGit   
 - 微信： 18683572712
 - Aleo 钱包地址： aleo1ptzhfmk768w0jdsqf7lf8mpd9pdzzz0wdp3k6589eggt44ac9gfqjmyfpc 
-- 技术栈：  rust
-- 自我介绍：   
+- 技术栈：  Solidity / Go / Rust / Java / Solana
+- 自我介绍：   准备入行web3,目前在交易所
