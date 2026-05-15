@@ -1,24 +1,7 @@
 ---
-title: 对比表
+title: Comparison Table
 ---
 
-# 对比表
+# Comparison Table
 
-A side-by-side comparison between **Leo** (Aleo) and **Solidity** (Ethereum/EVM).
-
-| 功能特性 | Leo | Solidity |
-| --- | --- | --- |
-| 执行模型 | 链下执行 + 链上证明验证和可选的链上执行 | 完全链上执行 |
-| 状态模型 | 公共键值 mapping 和私有 record storage | 键值合约 storage、临时 transient 存储、临时 memory 和只读 calldata |
-| 隐私 | 内置隐私，支持私有输入（消息）、私有输出（状态变更）和私有用户 | 无隐私——所有状态和 calldata 都是公开的 |
-| 执行成本 | 存储成本 + finalize 成本（基于指令的链上计算） | 基于操作码的 Gas |
-| 支持的类型 | bool, u8…u128, i8…i128，以及 field、group、scalar；不支持 bytes、动态数组和 string | bool、(u)int8…256、bytes、动态数组、string 等 |
-| 开发工具 | leo CLI, Leo debugger, IDE plugins, DokoJS, Amareleo | Hardhat, Foundry, Remix, Truffle 等 |
-| 随机性 | ChaCha random function | 依赖第三方链下预言机（例如 Chainlink VRF） |
-| 错误处理 | assert, assert_eq, assert_neq (no custom msg) | assert, require, revert with optional revert strings |
-| 调度类型 | Static (call) and dynamic (call.dynamic) dispatch via ARC-0009 | Dynamic dispatch |
-| 内置函数 | block.height, block.timestamp, self.signer, self.caller, self.address, network.id, signature::verify, group::GEN, aleo::GENERATOR, aleo::GENERATOR_POWERS, BHP hashes and commits, Keccak hashes, Pedersen hashes and commits, Poseidon hashes, SHA3 hashes etc. | keccak256, sha256, ripemd160, ecrecover, address.(member functions), abi.encode, abi.decode, block.(metadata) etc. |
-| 代币标准 | ARC-21 (existing), ARC-20 / ARC-22 (draft) | ERC-20 |
-| NFT 标准 | ARC-721 | ERC721 |
-| 可升级性 | Native upgradeability coming soon with ARC-6 | Via proxy patterns (Transparent, UUPS, Beacon) |
-| 区块浏览器 | Provable Explorer (Beta), VXB.ai (Formerly Aleo123.io), Aleoscan etc. | Etherscan, Blockscout etc. |
+Coming soon.

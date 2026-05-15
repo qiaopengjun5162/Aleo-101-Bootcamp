@@ -1,56 +1,7 @@
 ---
-title: SnarkVM 贡献
+title: SnarkVM Contribution
 ---
 
-# SnarkVM 贡献
+# SnarkVM Contribution
 
-本指南详细说明了更新 snarkVM 并将这些更改传播到 Aleo 网络所需的步骤.
-
-## 分支概述
-
-[**staging 分支**](https://github.com/AleoNet/snarkVM)
-
-- 此分支作为集成和初始测试更改的候选发布环境，然后再提升到 mainnet 分支。
-
-[**mainnet 分支**](https://github.com/AleoNet/snarkVM/tree/mainnet)
-
-- 这是生产分支，只有稳定且经过充分测试的更改才会合并到此。 它在更改验证后直接镜像 staging 分支。 用于创建生产发布版本。
-
-## snarkVM Pull Request (PR) 的影响
-
-- 当新的 PR 被合并到 snarkVM 的 staging 时，snarkOS 也必须更新以反映更新后的 snarkVM 依赖。 这需要为 snarkOS 单独提交一个 PR，确保所有检查如 snarkOS 贡献指南中所规定的那样通过。
-- 在某些情况下，snarkVM PR 可能有一个对应的 "姊妹 PR" 在 snarkOS 中，这对于 snarkOS 的成功编译是必要的。 始终在 PR README 中检查"姊妹 PR"。
-
-## snarkVM PR 的审查和合并流程
-
-**1. 审查 snarkVM PR:**
-
-- 仔细审查 snarkVM 的 PR，考虑其状态和任何评论。
-
-**2. 在 snarkVM PR 上运行 CI:**
-
-- 执行持续集成 (CI) 以验证已审查的 PR。
-
-**3. 检出并推送 snarkVM 分支:**
-
-- 检出相关的 snarkVM 分支并推送到仓库。
-
-**4. 合并 snarkVM PR:**
-
-- 合并已审查和批准的 snarkVM PR。
-
-## 创世区块和参数重新生成
-
-- 重新生成创世区块和参数:
-- 要确定参数是否需要重新生成和上传，请运行位于以下位置的脚本 snarkVM/parameters/scripts/.
-- 运行脚本后，执行 git status. 如果没有检测到更改 (git diff)，则无需上传任何新内容。
-- 首次使用参数 CDN:
-- 如果这是首次使用参数 CDN，还需上传 .usrs 文件。这些文件是固定的，不会在 git diff 中显示更改，但它们必须存在于参数 CDN 中。
-- 重新采样创世区块:
-- 你可能需要使用 snarkup 工具重新采样创世区块。
-
-## 更新 snarkOS 以引用最新的 snarkVM 提交
-
-- 创建 snarkOS PR:
-- 为 snarkOS 创建一个 PR，更新 Cargo.toml 和 Cargo.lock 文件以指向最新的 snarkVM 提交哈希。
-- 遵循 snarkOS 贡献指南中概述的流程以确保正确集成。
+Coming soon.
