@@ -1,10 +1,10 @@
 {
   "overview": "Overview",
-  "installation": "Installation",
+  "installation": "安装",
   "aleo-programs": "Aleo Programs",
   "language": "Language",
   "opcodes": "Opcodes",
   "special-operands": "Special Operands",
   "grammar": "Grammar",
-  "tooling": "Tooling"
+  "tooling": "工具"
 }
