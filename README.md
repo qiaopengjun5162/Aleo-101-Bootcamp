@@ -60,11 +60,33 @@
 
 ---
 
+### ⭐ 课程大纲 ⭐
+
+**第一章：为什么需要隐私？**（2 节课）5.11 - 5.17 | [课程](https://openbuild.xyz/learn/challenges/2097505722/1778499675) | [task1](./task/task1.md)
+
+* 常见的隐私常见介绍和技术背景
+* 介绍Aleo的背景和基础信息
+* Aleo Concept
+  * UTXO
+
+**第二章：Leo 入门：学会这门语言**（1 节课）5.19 - 5.24 | [课程](https://openbuild.xyz/learn/challenges/2097505722) | [task2](./task/task2.md)
+
+* Leo语言语法基础入门和简单Demo
+
+* 融入AI Coding部分
+
+**第三章：建起来：从程序到 dApp**（1 节课）5.26 - 5.31 | [课程](https://openbuild.xyz/learn/challenges/2097505722) | [task3](./task/task3.md)
+
+* 基于Leo+前端+必要的SDK等构建一个有前端界面的隐私小应用
+* 融入AI Coding部分
+
+**第四章：用起来：真实场景落地**（1-2 节课）6.2 - 6.7 | [课程](https://openbuild.xyz/learn/challenges/2097505722) | [task4](./task/task4.md)
+
+---
 
 ### 任务
 
 每个课程章节对应一个 **task**，可以在 [task](./task) 文件夹中复制对应章节到你的文件夹 `learn/YourName` 中，然后完成作业并提交 PR。**注意：不要修改别人文件夹的内容。 每章课程开课后才可提交本章作业**
-
 
 <br>
 
