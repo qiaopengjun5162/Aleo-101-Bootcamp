@@ -1,0 +1,6 @@
+- 昵称：  ZYAEwan
+- GitHub 用户名：  Zhaoxiaoan
+- 微信：_ZYAEwan
+- Aleo 钱包地址：  (不明白的可以学完基础知识后再填)
+- 技术栈：  java , react , rust ,solana
+- 自我介绍：  5年Java开发，前后端都会，rust转行中。
