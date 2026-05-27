@@ -1,14 +1,30 @@
-program private_multiplier.aleo {
-    // 私有乘法：两个私有输入相乘
-    // 输入默认是 private，这里实现一个最小可演示的私密乘法。
-    fn private_multiply(a: u32, b: u32) -> u32 {
-        let result: u32 = a * b;
-        return result;
-    }
+program private_multiplier;
 
-    // 额外函数：验证结果是否正确（返回布尔值）
-    fn verify_result(a: u32, b: u32, expected: u32) -> bool {
-        let actual: u32 = a * b;
-        return actual == expected;
-    }
+/*
+ * Private Multiplier - 实现私密乘法运算
+ * 输入：两个私密值 a 和 b
+ * 输出：私密乘法结果 c = a * b
+ */
+
+// 主函数：执行私密乘法
+function private_multiply:
+    input a as private field,
+    input b as private field
+    output c as field
+{
+    // 执行私密乘法运算
+    c = a * b;
+
+    // 返回结果
+    return c;
+}
+
+// 测试函数（可选）
+function test_multiply:
+    input test_a as private field,
+    input test_b as private field
+    output result as field
+{
+    result = test_a * test_b;
+    return result;
 }
