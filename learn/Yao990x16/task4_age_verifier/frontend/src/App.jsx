@@ -10,6 +10,10 @@ const aleoWorker = AleoWorker();
 // 年龄限制固定为 18（公开参数）
 const AGE_LIMIT = 18;
 
+// Leo Wallet requestTransaction 的 fee 按 microcredits 传入。
+// 100_000 microcredits = 0.1 credit；低于实际成本时钱包会先 Completed 再 Failed。
+const EXECUTION_FEE = 100_000;
+
 // 已部署到 Testnet 的程序 ID
 const PROGRAM_ID = "yao990x16_age_verifier.aleo";
 
@@ -26,6 +30,7 @@ function App() {
   // 链上执行状态
   const [txId, setTxId] = useState(null);
   const [txStatus, setTxStatus] = useState(null); // "pending", "completed", "failed", "timeout"
+  const [txStatusDetail, setTxStatusDetail] = useState(null);
 
   // 钱包状态与方法
   const { publicKey, connected, executeTransaction, transactionStatus } = useWallet();
@@ -43,6 +48,7 @@ function App() {
     setError(null);
     setTxId(null);
     setTxStatus(null);
+    setTxStatusDetail(null);
     setExecuting(false);
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
   }, []);
@@ -55,6 +61,15 @@ function App() {
       attempts++;
       try {
         const statusResponse = await transactionStatus(transactionId);
+        const rawLeoStatus = await window.leoWallet?.transactionStatus?.(transactionId)
+          ?? await window.leo?.transactionStatus?.(transactionId)
+          ?? null;
+        const detail = {
+          adapter: statusResponse,
+          leoWallet: rawLeoStatus,
+        };
+        setTxStatusDetail(detail);
+
         const s = typeof statusResponse === "object" ? statusResponse.status : statusResponse;
         const normalizedStatus = s?.toLowerCase() || "";
 
@@ -79,6 +94,10 @@ function App() {
     }, 3000);
   };
 
+  const isShieldInternalTransactionId = (transactionId) => (
+    typeof transactionId === "string" && transactionId.startsWith("shield_")
+  );
+
   const handleVerify = async () => {
     const ageNum = parseInt(age, 10);
     if (isNaN(ageNum) || ageNum < 0 || ageNum > 255) {
@@ -90,6 +109,7 @@ function App() {
     setResult(null);
     setTxId(null);
     setTxStatus(null);
+    setTxStatusDetail(null);
     setExecuting(true);
 
     try {
@@ -113,13 +133,24 @@ function App() {
           program: PROGRAM_ID,
           function: "verify_age",
           inputs: [`${ageNum}u8`, `${AGE_LIMIT}u8`],
+          fee: EXECUTION_FEE,
           privateFee: false, // 改回 false，使用公开余额支付手续费（水龙头通常发放公开余额）
         });
-
         if (tx && tx.transactionId) {
           setTxId(tx.transactionId);
-          setTxStatus("pending");
           setResult({ age: ageNum, mode: "onchain" });
+
+          if (isShieldInternalTransactionId(tx.transactionId)) {
+            setTxStatus("wallet_failed");
+            setTxStatusDetail({
+              walletTransactionId: tx.transactionId,
+              reason: "Shield Wallet 返回的是内部请求 ID，不是 Aleo 链上交易 ID。Shield 当前在 JWT/CORS 阶段失败，交易没有广播到 Testnet。",
+            });
+            setExecuting(false);
+            return;
+          }
+
+          setTxStatus("pending");
           startPolling(tx.transactionId);
         } else {
           throw new Error("未能获取到交易 ID，可能钱包签名被拒绝。");
@@ -137,6 +168,15 @@ function App() {
     if (!addr) return "";
     const str = typeof addr === "string" ? addr : String(addr);
     return str.length > 16 ? `${str.slice(0, 8)}...${str.slice(-6)}` : str;
+  };
+
+  const formatStatusDetail = (detail) => {
+    if (!detail) return "暂无钱包返回详情，请打开浏览器控制台查看 Aleo transaction status 日志。";
+    try {
+      return JSON.stringify(detail, null, 2);
+    } catch {
+      return String(detail);
+    }
   };
 
   const renderLocalResult = () => (
@@ -254,12 +294,19 @@ function App() {
       );
     }
 
-    if (txStatus === "failed" || txStatus === "timeout") {
+    if (txStatus === "failed" || txStatus === "timeout" || txStatus === "wallet_failed") {
+      const isWalletFailure = txStatus === "wallet_failed";
       return (
         <div className="result-section failed">
           <div className="result-icon">🚫</div>
-          <h2 className="result-title">链上执行失败 / 超时</h2>
-          <p className="result-desc">您的交易未能成功确认。可能是因为年龄未达标（执行不满足）、手续费不足或网络拥堵导致超时。</p>
+          <h2 className="result-title">
+            {isWalletFailure ? "钱包提交失败" : "链上执行失败 / 超时"}
+          </h2>
+          <p className="result-desc">
+            {isWalletFailure
+              ? "钱包没有返回 Aleo 链上交易 ID，说明交易尚未广播。Shield Wallet 当前卡在 Provable JWT/CORS 阶段，这不是合约执行失败。"
+              : "钱包或链上节点返回了失败状态。年龄小于门槛只会返回 false，通常不应导致交易失败；请优先查看下面的钱包原始状态。"}
+          </p>
           <div className="proof-meta">
             <div className="proof-item">
               <span className="proof-label">交易 ID</span>
@@ -276,6 +323,22 @@ function App() {
             <div className="proof-item">
               <span className="proof-label">最终状态</span>
               <span className="proof-value text-red">{txStatus.toUpperCase()} ❌</span>
+            </div>
+            <div className="proof-item" style={{ alignItems: "flex-start" }}>
+              <span className="proof-label">钱包状态详情</span>
+              <pre
+                className="proof-value"
+                style={{
+                  maxWidth: "100%",
+                  overflowX: "auto",
+                  whiteSpace: "pre-wrap",
+                  textAlign: "left",
+                  fontSize: "0.7rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                {formatStatusDetail(txStatusDetail)}
+              </pre>
             </div>
           </div>
           <button id="reset-btn" className="reset-btn" onClick={handleReset}>← 重新验证</button>

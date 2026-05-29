@@ -1,5 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useMemo } from "react";
+import { Network } from "@provablehq/aleo-types";
+import { DecryptPermission } from "@provablehq/aleo-wallet-adaptor-core";
 import { AleoWalletProvider } from "@provablehq/aleo-wallet-adaptor-react";
 import {
   WalletModalProvider,
@@ -11,6 +13,11 @@ import { ShieldWalletAdapter } from "@provablehq/aleo-wallet-adaptor-shield";
 import "@provablehq/aleo-wallet-adaptor-react-ui/dist/styles.css";
 
 export default function AleoWalletProviderWrapper({ children }) {
+  const programs = useMemo(
+    () => ["yao990x16_age_verifier.aleo", "credits.aleo"],
+    []
+  );
+
   const wallets = useMemo(
     () => [
       new ShieldWalletAdapter({ appName: "ZK Age Verifier" }),
@@ -22,7 +29,11 @@ export default function AleoWalletProviderWrapper({ children }) {
   return (
     <AleoWalletProvider
       wallets={wallets}
+      network={Network.TESTNET}
+      decryptPermission={DecryptPermission.UponRequest}
+      programs={programs}
       autoConnect={false}
+      onError={(error) => console.error("Aleo wallet error:", error)}
     >
       <WalletModalProvider>
         {children}
