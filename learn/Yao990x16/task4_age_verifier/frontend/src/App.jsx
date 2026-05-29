@@ -113,7 +113,7 @@ function App() {
           program: PROGRAM_ID,
           function: "verify_age",
           inputs: [`${ageNum}u8`, `${AGE_LIMIT}u8`],
-          privateFee: true, // 使用隐私记录支付
+          privateFee: false, // 改回 false，使用公开余额支付手续费（水龙头通常发放公开余额）
         });
 
         if (tx && tx.transactionId) {
