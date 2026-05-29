@@ -2,9 +2,9 @@ export default {
   logo: (
     <div className="aleo-logo-nav">
       <span className="aleo-logo-text" role="img" aria-label="Aleo" />
-      <a href="/learn">Learn</a>
-      <a href="/build">Build</a>
-      <a href="/participate">Participate</a>
+      <a href="/learn/what-is-aleo/background">Learn</a>
+      <a href="/build/getting-started">Build</a>
+      <a href="/participate/wallets">Participate</a>
     </div>
   ),
   logoLink: false,
