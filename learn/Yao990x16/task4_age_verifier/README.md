@@ -102,6 +102,13 @@ $ leo execute verify_age 25u8 18u8 --yes --broadcast
 - **钱包连接**：Shield Wallet / Leo Wallet
 - **合约信息展示**：链接到 Aleo Explorer
 
+### 前端功能展示
+
+- **钱包交互 (连接与授权)**:
+  ![链上广播执行钱包交互截图](docs/pic/链上广播执行钱包交互截图.png)
+- **链上验证成功 (DApp UI)**:
+  ![前端链上验证成功截图](docs/pic/前端链上验证成功截图.png)
+
 ### 启动方式
 
 ```bash
@@ -113,13 +120,15 @@ npm run dev
 
 ## 📁 项目结构
 
-```
+```text
 task4_age_verifier/
 ├── docs/                     # 任务文档与截图
 │   └── pic/                  # 链上交互与部署截图
 │       ├── Testnet合约截图.png
 │       ├── Testnet执行TX截图.png
-│       └── Testnet部署TX截图.png
+│       ├── Testnet部署TX截图.png
+│       ├── 前端链上验证成功截图.png
+│       └── 链上广播执行钱包交互截图.png
 ├── src/
 │   └── main.leo              # Leo 合约源码
 ├── build/

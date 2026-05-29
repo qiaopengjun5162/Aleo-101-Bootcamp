@@ -58,6 +58,12 @@
    - **解决方案**：深入调整了 Vite 的配置（`vite.config.js`），设置 `worker: { format: 'es' }` 以及 `build: { target: 'esnext' }`，完美解决了 ESM 格式和 Top-level await 的兼容性问题。同时修复了 ESLint 报错，确保了代码规范。
 5. **单元测试重构**：
    - 配合新的程序名称，重构了 `test_yao990x16_age_verifier.leo` 单元测试文件，并成功跑通所有测试用例（4/4 passed）。
+6. **前端与钱包联调的踩坑记录 (超硬核实战经验)**：
+   在真正与钱包进行链上交互（`executeTransaction`）时，遭遇了多个由于官方基础设施尚不完善导致的坑，并通过“防御性编程”逐一化解：
+   - **Shield 钱包的手续费单位解析 Bug**：在前端传递 `fee: 100_000` 时，Shield 插件错误地将其解析为 10 万个 Credits（而非 Microcredits），导致瞬间因“余额不足”直接拒绝交易。解决方案为：移除硬编码的 fee，让钱包根据内置逻辑自适应推算。
+   - **Shield 钱包的 JWT 鉴权与 CORS 故障**：在通过了参数组装后，发现 Shield 始终无法广播交易，前端轮询一直报 `Transaction not found`。经过 F12 后台抓包排查，发现 Shield 后台 `TxOrchestratorService` 试图请求官方鉴权接口获取 JWT 时，因为官方后端 `api.provable.com` 漏配了 `Access-Control-Allow-Origin`，导致发生了严重的 CORS 跨域拦截！
+   - **Leo 钱包的 Microcredits 设定坑**：更换 Leo Wallet 后发现它成功广播，但链上依然 Failed。排查后发现，Leo 钱包的底层 SDK 默认将 fallback fee 设得极低（0.001），不足以支付 Testnet 的实际执行网络费。通过在前端主动传入 `fee: 100_000` (Microcredits = 0.1 Credits)，最终成功让 Leo 钱包顺利广播，并得到最终确认（Confirmed ✅）的链上真实交易 ID。
+   - **防御性降级 UI**：为应对 Shield 钱包错误返回内部 ID（如 `shield_1...`）而不报错的缺陷，在 `App.jsx` 中编写了严格的拦截器：一旦发现 `tx.transactionId` 不以真正的 Aleo 链上哈希 `at1` 开头，立刻阻断无效的死循环轮询，并渲染专属的 `wallet_failed` 状态 UI，极大提升了用户体验。
 
 ---
 
