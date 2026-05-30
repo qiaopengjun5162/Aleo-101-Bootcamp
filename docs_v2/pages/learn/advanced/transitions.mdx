@@ -4,4 +4,198 @@ title: Transitions
 
 # Transitions
 
-TODO: Add content.
+本文详细介绍 Aleo 中 transitions（状态转换）的内部结构和密码学机制。关于更高层级的概览，可参见 [Transactions](/learn/core-concepts/transactions)。
+
+## Structure
+
+每个 transition 都包含以下字段：
+
+| Field           | Type   | Description                                                                                                      |
+| --------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| `id`            | Field  | `Hash_BHP512(merkle_root &#124;&#124; tcm)`，其中 `merkle_root` 是 input ID 和 output ID 组成的 Merkle tree root |
+| `program_id`    | String | 该 transition 所属的 program                                                                                     |
+| `function_name` | String | 被调用的 function                                                                                                |
+| `inputs`        | Array  | Constant、public、private 或 record inputs                                                                       |
+| `outputs`       | Array  | Constant、public、private、record 或 Future outputs                                                              |
+| `tpk`           | Group  | Transition public key                                                                                            |
+| `tcm`           | Field  | Transition commitment                                                                                            |
+| `scm`           | Field  | Signer commitment                                                                                                |
+
+## Cryptographic Keys
+
+每个 transition 都会生成一组唯一的 cryptographic keys（密码学密钥），用于加密和身份绑定。
+
+### Transition Public Key (TPK)
+
+```text
+r = HashToScalar(serial_number_domain || sk_sig || nonce)
+tpk = r × G
+```
+
+每个 transition 都会派生出一个新的随机标量 `r`。TPK 会发布到链上，并被接收方用于解密 private outputs（私有输出）。
+
+### Transition View Key (TVK)
+
+```text
+tvk = (signer_address × r).to_x_coordinate()
+```
+
+TVK 用于加密和解密当前这个特定 transition 的 private inputs（私有输入）和 private outputs（私有输出）。它可以被分享给审计方，用来披露单个 transition 的数据，而不会暴露账户的 view key（查看密钥）。
+
+### Transition Commitment (TCM)
+
+```text
+tcm = Hash_PSD2(tvk)
+```
+
+TCM 是对 TVK 的 commitment（承诺），用于在不公开 TVK 的情况下对其进行绑定。该值会发布到链上。
+
+### Signer Commitment (SCM)
+
+```text
+scm = Hash_PSD2(signer.to_x_coordinate() || root_tvk)
+```
+
+SCM 会将 signer（签名者）的身份绑定到 root transition view key，也就是交易中顶层 transition 的 TVK。这样可以确保一笔交易中的所有 transitions 都归属于同一个 signer，同时又不会公开 signer 的地址。
+
+## Input Record Processing
+
+当一个 transition 消耗某个 record（记录）时，系统会通过以下步骤生成 **serial number（序列号）** 和 **tag（标签）**。serial number 用于防止 double-spending（双花），tag 用于支持 [record scanning](/learn/advanced/record-scanning)。
+
+### 1. Record View Key
+
+```text
+record_view_key = (record.nonce × view_key).to_x_coordinate()
+```
+
+### 2. Record Commitment
+
+```text
+input_bits = program_id || record_name || record_data
+```
+
+- `record_data` 在处理前应去除 `version` 字段。
+
+#### V0 Records (non-hiding)
+
+```text
+commitment = Hash_BHP1024(input_bits)
+```
+
+#### V1 Records (hiding)
+
+```text
+digest = Hash_BHP1024(input_bits)
+cm_nonce = HashToScalar_PSD2("AleoCommitment0" || record_view_key)
+commitment = Commit_BHP512(digest || version, cm_nonce)
+```
+
+### 3. Generator & Gamma
+
+```text
+H = HashToGroup_PSD2(serial_number_domain || commitment)
+gamma = sk_sig × H
+```
+
+### 4. Serial Number
+
+```text
+sn_nonce = HashToScalar_PSD2(serial_number_domain || (cofactor × gamma).to_x_coordinate())
+serial_number = Commit_BHP512(serial_number_domain || commitment, sn_nonce)
+```
+
+### 5. Tag
+
+```text
+Hash_PSD2(sk_tag || commitment)
+```
+
+- 该值由 [graph key](/learn/advanced/key-derivation#51-graph-key) 计算得到。
+
+serial number 会发布到链上，用来标记该 record 已经被花费。tag 则让钱包能够追踪哪些 records 已经被消耗。
+
+## Output Record Processing
+
+当一个 transition 创建新的 record 时，会执行以下处理流程。
+
+### 1. Record Commitment
+
+采用与 input records 相同的双版本方案，见上文 [Record Commitment](#2-record-commitment)。
+
+### 2. Encryption Randomizer
+
+```text
+randomizer = HashToScalar_PSD2(tvk || register_locator)
+```
+
+- `register_locator` 是 output register 的 locator，本质上是一个被转换为 `field` 元素的 `u64`。
+
+### 3. Record View Key
+
+```text
+record_view_key = (owner_address × randomizer).to_x_coordinate()
+```
+
+### 4. Encryption
+
+```text
+randomizers = Hash_Many_PSD8(encryption_domain || record_view_key)
+ciphertext[i] = plaintext[i] + randomizers[i]
+```
+
+### 5. Checksum
+
+```text
+checksum = Hash_BHP1024(ciphertext_bits)
+```
+
+### 6. Sender Ciphertext
+
+```text
+sender_randomizer = Hash_PSD4(encryption_domain || record_view_key || 1field)
+sender_ciphertext = signer.to_x_coordinate() + sender_randomizer
+```
+
+- 仅适用于 V1 Records。
+
+加密后的 record 会被存储在链上。只有 owner（所有者）能够通过自己的 view key，或通过 record-specific view key（特定 record 的查看密钥）进行解密。
+
+## Non-Record Private Data
+
+非 record 类型的 private inputs 和 private outputs，例如 private function arguments（私有函数参数），会使用 **plaintext view key（明文查看密钥）** 进行加密：
+
+```text
+plaintext_view_key = Hash_PSD4(function_id || tvk || index)
+```
+
+接收方会通过两个步骤重建该密钥：
+
+1. **从 transition public key 派生 TVK：**
+
+```text
+tvk = (tpk × view_key).to_x_coordinate()
+```
+
+这是可行的，因为：
+
+```text
+tpk × view_key = (r × G) × view_key = r × (view_key × G) = r × address
+```
+
+而 prover（证明生成者）计算出的值也是：
+
+```text
+signer_address × r
+```
+
+2. **从 TVK 派生 plaintext view key：**
+
+```text
+plaintext_view_key = Hash_PSD4(function_id || tvk || index)
+```
+
+## Inclusion Proofs
+
+每个消耗 records 的 transition 都必须证明这些 records 确实存在于链上。Inclusion proofs（包含证明）是相对于 ledger（账本）的 state root（状态根）生成的 Merkle proofs，用来证明 record commitment 存在于全局状态树中。
+
+这些 inclusion proofs 会和 transition 的 execution proof（执行证明）一起通过 Varuna 进行 batching（批处理）。因此，validator（验证者）只需要为每笔 transaction 验证一个 aggregated proof（聚合证明），而不必单独检查每一个 Merkle proof。

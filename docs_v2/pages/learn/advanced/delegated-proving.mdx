@@ -4,4 +4,78 @@ title: Delegated Proving
 
 # Delegated Proving
 
-TODO: Add content.
+生成 zero-knowledge proofs（零知识证明）需要较高的计算成本。**Delegated Proving（委托证明）** 允许用户把证明生成过程交给第三方 prover（证明者）处理，同时不需要交出资金控制权，也不会暴露自己的 private key（私钥）。
+
+## 工作原理
+
+整个过程被拆分为两个阶段：
+
+### 1. Authorization（用户授权）
+
+用户使用自己的 **private key** 对交易进行签名，生成一个 `Authorization` 对象。这是唯一需要 private key 的步骤。
+
+```text
+Authorization = authorize(private_key, program_id, function_name, inputs)
+```
+
+手续费授权会单独创建，并绑定到某一次特定执行：
+
+- **Private fee**：`authorize_fee_private(private_key, credits_record, base_fee, priority_fee, execution_id)`
+- **Public fee**：`authorize_fee_public(private_key, base_fee, priority_fee, execution_id)`
+
+authorization 会经过密码学签名。签名覆盖 function ID、所有 input IDs、transition view key，以及 transition commitment。任何修改都会导致 authorization 失效。
+
+完成这一步后，用户拥有的是一份已签名的 authorization，但此时还没有生成 proof。
+
+### 2. Proving（证明者生成证明）
+
+用户将 `Authorization` 发送给第三方 prover。prover 会执行以下操作：
+
+1. 接收 sealed authorization（密封授权），其中不包含 private key。
+2. 使用已授权的 inputs 执行 program circuit（程序电路）。
+3. 通过 Varuna 为每个 transition 生成 ZK proofs。
+4. 将 proofs 组装成完整交易。
+
+prover 会使用账户的 **compute key**：`(pk_sig, pr_sig, sk_prf)`。该 compute key 被嵌入在 authorization 的签名中，用于生成有效证明。
+
+## Prover 能看到什么
+
+`Authorization` 会为每个 transition 包含一个 `Request`，其中包括：
+
+| 数据               | 说明                                                                                                                                               |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **所有明文输入值** | 包括 private inputs 和完整 record 数据。这些内容是构造 circuit witness 所必需的。                                                                  |
+| **Signer address** | 执行交易的账户地址。                                                                                                                               |
+| **Compute key**    | `$(pk_sig, pr_sig, sk_prf)$`，嵌入在签名中。                                                                                                       |
+| **`sk_tag`**       | tag secret key，由 graph key 派生而来；可以为 signer 的 records 计算 [record tags](/learn/advanced/record-scanning#tag-method-requires-view-key)。 |
+| **`tvk`**          | 每个 transition 对应的 view key，只能解密当前这个 transition 的 outputs。                                                                          |
+
+prover 必须看到明文 inputs，才能构造 circuit witnesses。这是 ZK proof generation 的内在要求。zero-knowledge 属性保护的是这些数据不被 **onchain observers（链上观察者）** 看到，但它并不防止 **prover 本身** 看到这些输入数据。
+
+## Prover 不能做什么
+
+| 行为                 | 为什么不能                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| **签署新交易**       | 需要 `sk_sig`，也就是 private key scalar，但它不会包含在 authorization 中。                      |
+| **修改交易**         | authorization 已经被签名，任何改动都会使其失效。                                                 |
+| **重定向资金**       | authorization 指定了精确的 inputs 和 outputs，prover 不能更改接收方或金额。                      |
+| **推导 private key** | 从 `pk_sig = sk_sig × G` 反推出 `sk_sig` 属于 discrete logarithm problem（离散对数问题）。       |
+| **解密其他 records** | 需要 account view key，但 authorization 中并不包含它；`tvk` 只能解密当前 transition 的 outputs。 |
+
+delegated proving 的安全保证主要是 **integrity（完整性）** 和 **key separation（密钥隔离）**。也就是说，prover 不能改变正在执行的内容，也不能签署新的交易。但它并不保证输入数据对 prover 保密。
+
+## 什么时候使用 Delegated Proving
+
+- **Mobile wallets（移动端钱包）**：手机通常缺乏快速生成证明所需的计算能力。Delegated proving 可以让私有交易在移动设备上变得更实用。
+- **Web applications（Web 应用）**：基于浏览器的应用可以把 proving 委托给后端服务，从而保持更流畅的用户体验。
+- **High-throughput scenarios（高吞吐场景）**：如果应用需要快速生成大量 proofs，可以把 proving 分发到专门的基础设施上处理。
+
+## 隐私权衡
+
+| 方式                                               | 隐私性                                                         | 性能                              |
+| -------------------------------------------------- | -------------------------------------------------------------- | --------------------------------- |
+| **Local proving（本地证明）**                      | 最高。数据不会离开设备。                                       | 在性能受限的硬件上较慢。          |
+| **Trusted delegated prover（可信委托证明者）**     | prover 可以看到 inputs，但用户信任其不会滥用这些数据。         | 快。使用专门的 proving 基础设施。 |
+| **Untrusted delegated prover（非可信委托证明者）** | prover 可以看到 inputs；完整性可以保证，但输入保密性不能保证。 | 快。                              |
+
+对于大多数用户来说，将 proving 委托给可信服务，例如 [Shield Wallet](/participate/wallets) 内置的 prover，通常是在可用性和隐私之间较好的折中方案。

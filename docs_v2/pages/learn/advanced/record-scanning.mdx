@@ -4,4 +4,87 @@ title: Record Scanning
 
 # Record Scanning
 
-TODO: Add content.
+由于 records（记录）在链上是以加密形式存储的，钱包需要一种方式来发现哪些 records 属于某个账户，并判断其中哪些已经被花费。这个过程称为 **record scanning（记录扫描）**。
+
+## The Problem
+
+在透明区块链上，查询余额非常简单，只需要在状态中查找你的地址即可。但在 Aleo 中，private records（私有记录）是加密的，并且不存在一个公开索引能够把 records 和 owners（所有者）直接关联起来。因此，钱包必须扫描整条链，并从加密数据流中识别出属于自己的 records。
+
+## Record Discovery
+
+发现新 records 的唯一方式，是使用账户的 view key（查看密钥）进行 **trial decryption（试探性解密）**。这里没有捷径，链上的每一个 output record 都必须被检查。
+
+对于链上的每一个 output record ciphertext（输出记录密文），钱包会执行以下步骤：
+
+1. 重建 record view key：
+
+```text
+record_view_key = (record.nonce × view_key).to_x_coordinate()
+```
+
+2. 从 record view key 派生 decryption randomizer（解密随机数）。
+3. 解密 owner field（所有者字段），并检查它是否与当前账户地址匹配。
+4. 如果匹配，则说明该 record 属于当前账户，随后解密剩余字段。
+
+这个过程需要账户的 **view key**，并且必须处理链上的每一个 output record。
+
+### Delegated Scanning
+
+由于全链 trial decryption 的计算成本较高，钱包可以把这项工作委托给 **confidential scanning service（机密扫描服务）**。钱包将自己的 view key 注册到该服务中，也可以选择加密后再提交；服务端负责执行 trial decryption，并为每个已注册的 view key 维护一个 owned records（所属记录）索引。之后，钱包就可以直接向该服务查询自己的 records，而不必亲自扫描整条链。
+
+这也是 [Shield](/participate/wallets) 这类钱包在实际中处理 record scanning 的方式。
+
+## Spent Detection
+
+当钱包发现属于自己的 records 后，还需要判断哪些 records 仍然可以被花费。当某个 record 在 transition（状态转换）中被消耗时，链上会公开发布一个 **serial number（序列号）** 和一个 **tag（标签）**。
+
+### Serial Number Method
+
+钱包会使用账户的 private key（私钥）为每个已知 record 计算 serial number。这个过程涉及 Edwards BLS12 curve 上的 scalar multiplication（标量乘法），然后再检查该 serial number 是否已经存在于链上。
+
+这是最确定的方法，但对每个 record 来说，计算成本都比较高。
+
+### Tag Method
+
+另一种更快的方法是使用账户的 **graph key（图密钥）**。graph key 中包含一个由 view key 派生出的单一值 `sk_tag`：
+
+```text
+sk_tag = Hash("AleoGraphKey" || view_key || 0)
+```
+
+对于每一个已知的 record commitment（记录承诺），钱包会计算：
+
+```text
+tag = Hash(sk_tag, record_commitment)
+```
+
+如果这个 tag 已经存在于链上，也就是在 record 被消耗时已经公开发布过，那么该 record 就已经被花费。
+
+这种方式对每个 record 都是 O(1) 查询，并且避免了 serial number 计算中所需的昂贵 scalar multiplication。
+
+### What's Published Onchain
+
+当一个 record 作为 transition input（状态转换输入）被消耗时，链上会存储两个值：
+
+| Field             | Purpose                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| **Serial number** | 唯一的 nullifier（作废标识），用于证明该 record 已被消耗，并防止 double-spending（双花）                |
+| **Tag**           | `Hash(sk_tag, commitment)`，用于支持 view-key-level spent detection（基于 view key 层级的快速花费检测） |
+
+这两个值都是 transition 中的公开数据，并且会作为 ZK proof（零知识证明）的一部分被验证。
+
+## Scanning Strategies
+
+### Full Scan
+
+Full Scan（完整扫描）会从 genesis block（创世区块）开始处理每一个区块，并对所有 output records 进行 trial decryption。它是最彻底的方法，但也是最慢的方法，因为它必须访问网络历史上创建过的每一个 record。
+
+### Incremental Sync
+
+Incremental Sync（增量同步）是在完成一次初始 full scan 之后，只处理之后新生成的区块。这种方式速度较快，但需要在本地维护已知 records 的状态。
+
+### Service-Backed Sync
+
+Service-Backed Sync（服务支持同步）会把 record discovery（记录发现）委托给 scanning service，然后在本地使用 tag method 持续进行 spent detection。
+
+这是移动端钱包和 Web 钱包中最实用的方案。

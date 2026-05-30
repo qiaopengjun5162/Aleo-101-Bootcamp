@@ -2,6 +2,166 @@
 title: The Aleo Curves
 ---
 
-# The Aleo Curves
+# Aleo 曲线
 
-TODO: Add content.
+Aleo 的密码学体系建立在两条相互配合的椭圆曲线之上：**BLS12-377** 用于 SNARK 相关操作，即外层证明系统；**Edwards BLS12** 用于电路内密码学，即 inner layer（内层）。
+
+## 概览
+
+这两条曲线之间最关键的关系如下：
+
+```text
+BLS12-377 scalar field (Fr) = Edwards BLS12 base field (Fq)
+8444461749428370424248824938781546531375899335154063827935233455917409239041
+```
+
+这意味着，BLS12-377 证明中的算术运算本来就在 Fr 上进行，而这些运算可以直接表示为 Edwards BLS12 上的原生域运算，不需要昂贵的 field emulation（域模拟）。这使得电路内密码学操作和 proof composition（证明组合）能够更高效地完成。
+
+|                                       | Edwards BLS12        | BLS12-377                   |
+| ------------------------------------- | -------------------- | --------------------------- |
+| **Curve Model（曲线模型）**           | Twisted Edwards      | Short Weierstrass           |
+| **Pairing-Friendly（是否支持配对）**  | No                   | Yes，embedding degree 为 12 |
+| **Scalar Field（标量域）**            | 251 bits             | 253 bits                    |
+| **Base Field（基域）**                | 253 bits             | 377 bits                    |
+| **G1 Compressed Size（G1 压缩大小）** | 32 bytes             | 48 bytes                    |
+| **G2 Compressed Size（G2 压缩大小）** | N/A                  | 96 bytes                    |
+| **Primary Use（主要用途）**           | 地址、签名、密钥派生 | SNARK 证明、多项式承诺      |
+
+### 内层与外层
+
+- **Outer layer（外层，BLS12-377）**：SNARK prover（证明生成者）会在 BLS12-377 上生成证明。验证过程使用该曲线上的 pairings（配对）。Structured Reference String（SRS，结构化参考字符串）、KZG polynomial commitments（KZG 多项式承诺）以及 proof aggregation（证明聚合）都运行在 BLS12-377 上。
+
+- **Inner layer（内层，Edwards BLS12）**：密钥生成、签名、地址派生和 record encryption（记录加密）都发生在 Edwards BLS12 上。当这些操作需要在 SNARK 内部被证明时，其算术会表示为 BLS12-377 的 Fr 上的约束方程，而这个 Fr 正好等于 Edwards BLS12 的 Fq。因此不存在域不匹配问题，约束成本也更低。
+
+这类似于 Zcash 中 Jubjub 与 BLS12-381 pairing 的组合方式，但 Aleo 的曲线选择更加侧重于最大化 FFT（快速傅里叶变换）效率。
+
+## Edwards BLS12
+
+Edwards BLS12 是一条**嵌入在 BLS12-377 内部**的 Twisted Edwards 曲线，具有完整且无异常情况的加法规则。
+
+### 曲线方程
+
+```text
+-x² + y² = 1 + d·x²·y²
+```
+
+### 参数
+
+| Parameter             | Value                                        |
+| --------------------- | -------------------------------------------- |
+| `a`                   | -1                                           |
+| `d`                   | 3021                                         |
+| Base field (Fq)       | BLS12-377 的 scalar field Fr，253 bits       |
+| Cofactor              | 4                                            |
+| Compressed point size | 32 bytes，包含 x-coordinate 和 y 的 sign bit |
+
+由于 `a = -1`，所以乘以 `a` 只需要取负，这在电路约束中成本非常低。该曲线与 Montgomery curve（蒙哥马利曲线）存在双有理等价关系。
+
+### 用途
+
+- **Account addresses（账户地址）**：Aleo 的 `aleo1...` 地址是该曲线上的点。
+- **Key derivation（密钥派生）**：Private key → view key → address。
+- **Transaction signatures（交易签名）**：用于授权签名。
+- **Pedersen commitments（Pedersen 承诺）**：用于 record commitments（记录承诺）和 serial number generation（序列号生成）。
+- **Encryption（加密）**：用于 record 和 ciphertext encryption（密文加密）。
+
+### Scalar Field Parameters（标量域参数）
+
+| Representation          | Value                                                                                   |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| Modulus (integer)       | `2111115437357092606062206234695386632838870926408408195193685246394721360383`          |
+| Modulus (hex)           | `04aad957a68b2955982d1347970dec005293a3afc43c8afeb95aee9ac33fd9ff`                      |
+| Modulus (u64 LE)        | `[13356249993388743167, 5950279507993463550, 10965441865914903552, 336320092672043349]` |
+| Root of Unity (integer) | `319259817323897909850357899558356952867916286821886696195104543796545181129`           |
+| Root of Unity (u64 LE)  | `[15170730761708361161, 13670723686578117817, 12803492266614043665, 50861023252832611]` |
+
+### Base Field Parameters（基域参数）
+
+| Representation          | Value                                                                                   |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| Modulus (integer)       | `8444461749428370424248824938781546531375899335154063827935233455917409239041`          |
+| Modulus (hex)           | `12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001`                      |
+| Modulus (u64 LE)        | `[725501752471715841, 6461107452199829505, 6968279316240510977, 1345280370688173398]`   |
+| Root of Unity (integer) | `5928890464389279575069867463136436689218492512582288454256978381122364252082`          |
+| Root of Unity (u64 LE)  | `[4340692304772210610, 11102725085307959083, 15540458298643990566, 944526744080888988]` |
+
+## BLS12-377
+
+BLS12-377 是 Barreto-Lynn-Scott 曲线族中的一条 pairing-friendly curve（配对友好曲线），embedding degree（嵌入度）为 12。它的 scalar field Fr 具有 **2-adicity 47**，也就是 2^47 可以整除 Fr - 1，这对于证明生成过程中的高效 FFT 非常重要。
+
+### 曲线方程
+
+**G1**：`y² = x³ + 1`，定义在 Fq 上，Fq 是 377-bit prime field（377 位素数域）。
+
+### 域
+
+| Field             | Size     | Modulus                                                                                                              |
+| ----------------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| Fq (base field)   | 377 bits | `258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177` |
+| Fr (scalar field) | 253 bits | `8444461749428370424248824938781546531375899335154063827935233455917409239041`                                       |
+
+### 子群
+
+- **G1**：定义在 Fq 上、满足 `y² = x³ + 1` 的点，cofactor 约为 2^94。
+- **G2**：定义在 Fq² 上的 D-type quadratic twist（二次扭曲）上的点，其中 Fq² 是 degree-2 extension（二次扩域）。
+- **GT**：定义在 Fq^12 中的 target group（目标群），其中 Fq^12 是 degree-12 extension（十二次扩域）。
+
+### Pairing（配对）
+
+BLS12-377 通过 Miller loop 和 final exponentiation（最终指数运算）支持 **Optimal Ate pairing**：
+
+```text
+e(aP, Q) = e(P, aQ) = e(P, Q)^a
+```
+
+这种 bilinearity（二线性）性质是 Varuna SNARK 和 **SonicKZG10** polynomial commitment scheme（多项式承诺方案）的数学基础。
+
+### 用途
+
+- **SNARK proof generation and verification（SNARK 证明生成与验证）**：Varuna 运行在 BLS12-377 之上。
+- **Structured Reference String (SRS)**：用于 universal setup（通用设置）参数。
+- **KZG polynomial commitments（KZG 多项式承诺）**：用于 SonicKZG10 承诺方案。
+- **Proof aggregation（证明聚合）**：用于批量处理多个 transition proofs（状态转换证明）。
+
+BLS12-377 最初是在 [ZEXE paper](https://eprint.iacr.org/2018/962) 中设计的，目的是与 BW6-761 曲线配合，实现高效的 proof composition（证明组合）。
+
+### Scalar Field Parameters（标量域参数）
+
+| Representation          | Value                                                                                   |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| Modulus (integer)       | `8444461749428370424248824938781546531375899335154063827935233455917409239041`          |
+| Modulus (hex)           | `12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001`                      |
+| Modulus (u64 LE)        | `[725501752471715841, 6461107452199829505, 6968279316240510977, 1345280370688173398]`   |
+| Root of Unity (integer) | `5928890464389279575069867463136436689218492512582288454256978381122364252082`          |
+| Root of Unity (u64 LE)  | `[4340692304772210610, 11102725085307959083, 15540458298643990566, 944526744080888988]` |
+
+### Base Field Parameters（基域参数）
+
+| Representation          | Value                                                                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Modulus (integer)       | `258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177`              |
+| Modulus (hex)           | `01ae3a4617c510eac63b05c06ca1493b1a22d9f300f5138f1ef3622fba094800170b5d44300000008508c00000000001`                                |
+| Modulus (u64 LE)        | `[9586122913090633729, 1660523435060625408, 2230234197602682880, 1883307231910630287, 14284016967150029115, 121098312706494698]`  |
+| Root of Unity (integer) | `146552004846884389553264564610149105174701957497228680529098805315416492923550540437026734404078567406251254115855`              |
+| Root of Unity (u64 LE)  | `[2022196864061697551, 17419102863309525423, 8564289679875062096, 17152078065055548215, 17966377291017729567, 68610905582439508]` |
+
+## snarkVM 中的 Keccak
+
+snarkVM 将 Keccak 实现为 sponge construction（海绵结构）`Sponge[f, pad, r]`。其中 permutation（置换函数）`f = Keccak-f[1600]` 作用在一个 5×5 的 64-bit lanes 网格上，也就是 1600-bit state（1600 位状态）。
+
+### Padding Variants（填充变体）
+
+| Variant | Padding Suffix | `pad(M)`                                                         |
+| ------- | -------------- | ---------------------------------------------------------------- |
+| Keccak  | `0x01`         | `M &#124;&#124; 0x01 &#124;&#124; 0x00...0x00 &#124;&#124; 0x80` |
+| SHA-3   | `0x06`         | `M &#124;&#124; 0x06 &#124;&#124; 0x00...0x00 &#124;&#124; 0x80` |
+| SHAKE   | `0x1F`         | `M &#124;&#124; 0x1F &#124;&#124; 0x00...0x00 &#124;&#124; 0x80` |
+
+### snarkVM Parameters（snarkVM 参数）
+
+| Variant               | Bitrate (r) | Capacity (c) |
+| --------------------- | ----------- | ------------ |
+| Keccak-256 / SHA3-256 | 1088 bits   | 512 bits     |
+| SHA3-512              | 576 bits    | 1024 bits    |
+
+Bitrate `r` 决定了每次 absorb step（吸收步骤）中会有多少位参与 XOR 运算；capacity `c = 1600 - r` 则提供安全余量。

@@ -4,4 +4,108 @@ title: Key Derivation
 
 # Key Derivation
 
-TODO: Add content.
+本页介绍 Aleo 账户完整的 cryptographic derivation path（密码学派生路径）。如果需要更高层次的概览，可以参考 [Accounts & Keys](/learn/core-concepts/accounts-and-keys)。
+
+## Derivation Path
+
+所有账户密钥都由一个随机 seed（种子）派生而来：
+
+```text
+Seed → Private Key → Compute Key → View Key → Address
+                                  → Graph Key
+```
+
+### 1. Seed
+
+Seed 是一个随机的 base field element（基域元素），通常离线生成。它是派生其他所有密钥的根秘密。该 field element 约有 253 bits 的熵，序列化后为 32 bytes。
+
+### 2. Private Key
+
+系统会使用 Poseidon hash（Poseidon 哈希）从 seed 中派生出两个 scalar values（标量值）：
+
+```text
+sk_sig = HashToScalar("AleoAccountSignatureSecretKey0" || seed)
+r_sig  = HashToScalar("AleoAccountSignatureRandomizer0.0" || seed)
+```
+
+`HashToScalar` 使用 input rate 为 2 的 Poseidon sponge hash（Poseidon 海绵哈希）。其中 domain separator strings（域分隔字符串）会通过 UTF-8 → little-endian integer（小端整数）→ 对 base field prime 取模的方式编码为 field elements。
+
+private key 是元组 `(seed, sk_sig, r_sig)`，并被编码为带有 `APrivateKey1` 前缀的 Base58 字符串。
+
+### 3. Compute Key
+
+Compute Key 由 private key 通过 Edwards BLS12 generator **G** 上的 scalar multiplication（标量乘法）派生而来：
+
+```text
+pk_sig = sk_sig × G
+pr_sig = r_sig × G
+sk_prf = HashToScalar_PSD4(pk_sig.x || pr_sig.x)
+```
+
+需要注意的是，`sk_prf` 使用的是 group elements（群元素）的 **x-coordinates**，而不是完整的 points，并且通过 **PSD4** 进行哈希。PSD4 指 input rate 为 4 的 Poseidon 哈希变体。
+
+compute key 是元组 `(pk_sig, pr_sig, sk_prf)`。它可以共享给第三方 prover（证明者），用于 [delegated proving](/learn/advanced/delegated-proving)。它允许 prover 生成 proof，但不能签署交易，也不能解密 records。
+
+### 4. View Key
+
+View Key 是一个由 private key 和 compute key 派生出的单个 scalar：
+
+```text
+view_key = sk_sig + r_sig + sk_prf
+```
+
+其中 `sk_prf` 是 compute key 中的值，即 `HashToScalar_PSD4(pk_sig.x || pr_sig.x)`。
+
+view key 可以解密属于该账户的所有 records 和 transaction data。它会被编码为带有 `AViewKey1` 前缀的 Base58 字符串。
+
+### 5. Address
+
+Address 由 view key 通过 scalar multiplication 派生而来：
+
+```text
+address = view_key × G
+```
+
+结果是 Edwards BLS12 curve 上的一个 point，并以 Bech32m 格式编码，前缀为 `aleo1`。
+
+### 5.1. Graph Key
+
+Graph Key 从 view key 派生而来，用于 [record scanning](/learn/advanced/record-scanning)：
+
+```text
+sk_tag = Hash_PSD4("AleoGraphKey0" || view_key || 0field)
+```
+
+需要注意的是，`sk_tag` 是一个 **field element**，不是 scalar。它使用 `hash_psd4` 计算，也就是 input rate 为 4 的 Poseidon 哈希。domain separator 是 `"AleoGraphKey0"`，第三个输入是 `Field::zero()`。
+
+Graph Key 中的 `sk_tag` 用于在 record commitments 上计算 deterministic tags（确定性标签），从而在不需要 private key 的情况下，高效完成 [spent detection](/learn/advanced/record-scanning#tag-method-requires-view-key)。
+
+## Poseidon Hash
+
+Key derivation 使用 **Poseidon** hash function。Poseidon 是一种 algebraic hash（代数哈希），可以直接在 field elements 上运行。这里使用了两个变体：
+
+- **PSD2**：带 domain separation 的 Poseidon sponge，input rate 为 2。用于从 seed 派生 `sk_sig` 和 `r_sig`。
+- **PSD4**：带 domain separation 的 Poseidon sponge，input rate 为 4。用于派生 `sk_prf` 和 `sk_tag`。其中 `sk_prf` 通过 `HashToScalar_PSD4` 派生，输出为 scalar；`sk_tag` 通过 `Hash_PSD4` 派生，输出为 field element。
+
+选择 Poseidon 的原因是它在 SNARKs 中效率较高。由于它直接运行在与 circuit 相同的 finite field（有限域）上，因此相比 SHA-256 这类非代数哈希，它需要的 constraints（约束）更少。
+
+## Security Properties
+
+| Key         | Can Sign | Can Decrypt | Can Prove | Can Scan |
+| ----------- | -------- | ----------- | --------- | -------- |
+| Private Key | Yes      | Yes         | Yes       | Yes      |
+| Compute Key | No       | No          | Yes       | No       |
+| View Key    | No       | Yes         | No        | Yes      |
+| Graph Key   | No       | No          | No        | Yes      |
+| Address     | No       | No          | No        | No       |
+
+每一步派生都是 one-way（单向）的。例如，想从 `pk_sig` 恢复 `sk_sig`，就需要解决 Edwards BLS12 上的 discrete logarithm problem（离散对数问题）。
+
+## Account Creation
+
+账户可以完全离线创建：
+
+1. 生成一个随机的 32-byte seed。
+2. 从 seed 派生所有 keys。
+
+这个过程不需要任何网络交互，也不需要注册。可以通过 [Leo CLI](/build/leo/cli/cli_overview)、[Aleo SDK](/build/sdk/overview)，或者任何实现了上述派生方案的工具完成。
