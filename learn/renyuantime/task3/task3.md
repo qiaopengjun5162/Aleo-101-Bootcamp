@@ -192,6 +192,29 @@ program credential_pass.aleo {
 2. **持证人/验证面板**：填入凭证 + 阈值 → 生成证明（展示"✅ 达标 / ❌ 未达标"与真实执行输出，但**不显示真实分数给验证方视角**）。
 3. **状态展示**：突出"验证方看不到真实分数"这一隐私要点，并展示公开计数逻辑。
 
+### 5.4.1 页面设计风格标准（务必遵守）
+
+整体追求 **shadcn/ui 经典黑白风格**：高级、精致、细致、克制。**不要**花哨渐变、彩色霓虹、毛玻璃、emoji 堆砌等"廉价感"元素。
+
+**实现方式（二选一）：**
+- 优先：直接用 **shadcn/ui（React + Vite + Tailwind）**，采用默认 `neutral`/`zinc` 基色与 "new-york" 风格组件。
+- 或：用**原生 HTML/CSS 复刻** shadcn 设计语言（按下方 token 手写），保持 2 小时可控。两种都可，视实现者熟练度选择。
+
+**设计 Token（黑白中性）：**
+- 背景 `#ffffff`；前景文字近黑 `#0a0a0a`；次级文字 `#71717a`（zinc-500）。
+- 边框/分隔线极浅灰 `#e4e4e7`（zinc-200）；卡片/输入框背景白或 `#fafafa`。
+- 主按钮：黑底白字（`bg #0a0a0a` / `text #fff`），hover 略微提亮；次按钮：白底黑字 + 浅边框（outline/ghost）。
+- 圆角 `--radius: 0.5rem`（卡片/按钮/输入一致）；阴影克制（`shadow-sm`，避免厚重投影）。
+- 字体：`Inter` / `Geist` / 系统 `-apple-system`；标题字重 600，正文 400–500，行高舒展。
+- 间距：留白充足（卡片内边距 `24px`、区块间距 `16–24px`）；信息分组清晰。
+
+**组件与质感：**
+- 三方面板用 **Card**（标题 + 描述 + 内容区），每张卡顶部标注身份视角（如 "Issuer / 发证方"）。
+- 输入用 shadcn `Input` 风格（细边框、聚焦时黑色 ring）；按钮用 `Button` 风格。
+- 状态用 **Badge**（达标=黑底/通过、未达标=描边红、防重放=描边灰）；执行输出用等宽字体的 `code` 区块（浅灰底）。
+- 过渡动效轻微（`transition` 150–200ms），不喧宾夺主。
+- 注重细节：对齐、像素级间距一致、空状态/加载态/错误态都要有，体现"精致细致"。
+
 ### 5.5 目录结构
 
 ```text
@@ -254,7 +277,17 @@ cd ../backend && node server.js
 
 ### 7.3 实现步骤（按顺序执行）
 
-1. **环境**：安装 Leo CLI，`leo --version` 确认可用（目标 Leo 4.x；语法用 `fn` / `final {}`，不要用旧的 `transition`）。
+1. **环境**：开发机为 **macOS（Apple Silicon M4 / ARM64）**，Leo 官方支持，无需特殊处理。安装 Leo CLI 并确认可用（目标 Leo 4.x；语法用 `fn` / `final {}`，不要用旧的 `transition`）：
+
+   ```bash
+   # 方式一：官方安装脚本（推荐）
+   curl -L https://raw.githubusercontent.com/ProvableHQ/leo/mainnet/leo_install.sh | sh
+   # 方式二：Homebrew
+   brew install leo
+   # 验证
+   leo --version
+   ```
+   Node 已具备（v22）。M4 性能充足，`leo run` 证明生成会很快。
 2. **Leo 程序** `credential_pass/`：
    - `leo new credential_pass` 初始化，编辑 `src/main.leo`。
    - 定义 `record Credential { owner: address, score: u32 }`。
@@ -266,7 +299,7 @@ cd ../backend && node server.js
      - 返回 `cred.score >= threshold`。
    - `leo run` 跑通 7.2 中的三种用例。
 3. **后端** `backend/server.js`：Node + Express，`execFile("leo", ["run", fn, ...inputs], { cwd: 程序目录 })`，封装 `/health`、`/api/issue`、`/api/verify`，统一返回 `{ ok, stdout, result, stderr }`。处理 assert 失败（非零退出码）为"未通过"而非 500。
-4. **前端** `web/index.html`：单页三面板（见第四节）。原生 HTML/CSS/JS 即可，界面要干净现代；突出"验证方看不到真实分数"的隐私要点；展示真实 `leo run` 输出。
+4. **前端** `web/`：单页三面板（见第四节）。**严格遵守 5.4.1 的 shadcn 经典黑白设计风格**（高级、精致、细致；优先 shadcn/ui，或用原生 CSS 复刻其设计语言）。突出"验证方看不到真实分数"的隐私要点；展示真实 `leo run` 输出。
 5. **联调 + 截图**：跑通主流程与 B1/B2，截图存 `screenshots/`，补全本文档 5.6 与第六节。
 6. **（可选拉伸）** 若时间充裕，按 Task 4 方向把部署/上链脚本与说明补上，但不影响本次验收。
 
