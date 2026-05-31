@@ -16,7 +16,8 @@ program privatevotedapp123.aleo {
 
     // Create a new vote record
     // transition is the entrypoint for creating records on Aleo
-    transition create_vote(public proposal_id: field, public vote_value: bool) -> VoteRecord {
+    // proposal_id is public (visible on chain), vote_value is private (kept secret)
+    transition create_vote(public proposal_id: field, vote_value: bool) -> VoteRecord {
         return VoteRecord {
             owner: self.caller,
             proposal_id,
