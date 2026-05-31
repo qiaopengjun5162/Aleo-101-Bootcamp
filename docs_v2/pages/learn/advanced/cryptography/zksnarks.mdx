@@ -4,4 +4,71 @@ title: zkSNARKs
 
 # zkSNARKs
 
-TODO: Add content.
+Aleo 的隐私性和可扩展性模型依赖于 **zkSNARKs**，即 zero-knowledge Succinct Non-interactive Arguments of Knowledge（零知识简洁非交互式知识论证）。本页介绍该证明系统在底层是如何工作的。
+
+## Varuna
+
+Aleo 使用 **Varuna**。Varuna 是一种基于 Algebraic Holographic Proofs（AHP，代数全息证明）的 zkSNARK 证明系统，由 [Marlin](https://eprint.iacr.org/2019/1047) 证明系统演化而来。Varuna 的设计目标是高效批量处理多个电路，这对 Aleo 非常关键，因为一笔交易中可以包含多个 transitions（状态转换），而每个 transition 都需要自己的证明。
+
+Varuna 使用 **SonicKZG10** 作为 polynomial commitment scheme（多项式承诺方案）。SonicKZG10 是一种基于 KZG 的方案，使用基于 [BLS12-377](/learn/advanced/cryptography/the-aleo-curves) 的 pairing（配对）进行构造。
+
+## R1CS
+
+在生成证明之前，程序逻辑必须被表示为 arithmetic circuit（算术电路）。Aleo 使用 **Rank-1 Constraint Systems (R1CS)**，即秩一约束系统，作为其中间表示形式。
+
+### R1CS 如何工作
+
+一个 R1CS 实例由有限域上的三个矩阵组成，分别是 **A**、**B** 和 **C**。一个有效的 assignment（赋值），也叫 witness（见证），是一个向量 **w**，并且对于每一行 _i_，都满足：
+
+```text
+(A[i] · w) × (B[i] · w) = (C[i] · w)
+```
+
+每一行都表示一个 **constraint（约束）**，也就是计算必须满足的一条规则。约束数量对应程序的复杂度。Aleo 程序中的每一个操作，例如加法、比较、哈希和签名验证，都会被转换成一个或多个 R1CS 约束。
+
+### 从 Leo 到 R1CS
+
+编译流程如下：
+
+1. **Leo** 源代码会被编译为 **Aleo Instructions**，也就是一种静态类型的汇编语言。
+2. **Aleo Instructions** 会由 snarkVM 的 synthesizer（综合器）合成为 **R1CS circuits**。
+3. R1CS 电路随后会被 Varuna 用于生成和验证证明。
+
+## 证明生成与验证
+
+### 证明生成
+
+Varuna 的证明生成过程原本是一个 5 轮交互式协议，随后通过 **Fiat-Shamir transform**（Fiat-Shamir 转换）变为非交互式协议。这里使用的是基于 Poseidon 的 algebraic sponge（代数海绵结构）。
+
+证明生成过程包括：
+
+1. 从 R1CS assignment 中生成 witness polynomials（见证多项式），并通过 SonicKZG10 进行承诺。
+2. 计算 sumcheck polynomials（求和检查多项式），并进行承诺。
+3. 对 index polynomials（索引多项式）和 quotients（商多项式）进行承诺。
+4. 生成 constraint satisfaction polynomials（约束满足多项式）。
+5. 对最终的 auxiliary polynomials（辅助多项式）进行承诺。
+
+当启用 zero-knowledge mode（零知识模式）时，也就是 private transitions（私有状态转换）所使用的模式，每个阶段都会加入 mask polynomials（掩码多项式），以防止验证者从证明过程中获知任何 witness 信息。
+
+### 验证
+
+验证过程会确定性地重放全部五轮协议：吸收 commitments（承诺），重建 linear combinations（线性组合）和 query sets（查询集合），然后调用 SonicKZG10 的 batch check（批量检查），验证多项式求值是否与承诺一致。
+
+验证速度很快，其成本比证明生成低几个数量级。
+
+## Setup
+
+Varuna 使用 **universal setup（通用设置）**，也就是一个单一的 Structured Reference String（SRS，结构化参考字符串）。这个 SRS 可以适用于最大规模以内的任意电路。它只需要生成一次，之后可以被网络上的所有程序重复使用。
+
+基于 universal SRS，每个程序函数都会派生出 circuit-specific keys（电路专用密钥）：
+
+- **Circuit Proving Key**：电路证明密钥，由 prover（证明者）用于为某个特定函数生成证明。
+- **Circuit Verifying Key**：电路验证密钥，由 validators（验证者）用于验证该函数的证明，并在部署时存储到链上。
+
+universal SRS 支持从 2^15 到 2^28 的多项式次数，其参数会从 `parameters.provable.com` 加载。
+
+## Proof Batching
+
+一笔 Aleo 交易最多可以包含 32 个 transitions，每个 transition 都有自己的电路。Varuna 会将所有 transition proofs（状态转换证明）以及 inclusion proofs（包含性证明，用于验证输入 records 是否存在于链上）批量合成为一个 aggregated proof（聚合证明）。
+
+与单独验证每个证明相比，这种批处理方式可以显著降低验证成本。
