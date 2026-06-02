@@ -4,4 +4,28 @@ title: Architecture
 
 # Architecture
 
-TODO: Add content.
+Aleo 网络基于两个核心软件组件构建 — **snarkVM** 和 **snarkOS** — 它们共同实现了链下执行/链上验证模型。
+
+![Architecture Overview](./images/architecture_overview.png)
+
+## snarkVM
+
+**snarkVM** 是 Aleo 网络的核心虚拟机。它是运行程序和生成零知识证明的链下执行环境。它有三个主要组件：
+
+- **Synthesizer（合成器）** — 将程序逻辑转换为与 Varuna zk-SNARK 证明系统兼容的算术电路
+- **Algorithms（算法）** — 实现证明系统和密码学原语（哈希、加密、签名方案）
+- **Ledger（账本）** — 提供与区块链状态交互的数据结构和方法
+
+当用户执行 Aleo 程序时，snarkVM 将其编译为电路，使用用户的输入运行该电路，并生成正确执行的 ZK-SNARK 证明。这一切都发生在本地 — snarkVM 在用户设备上运行，而不是在区块链上。
+
+## snarkOS
+
+**snarkOS** 是驱动 Aleo 网络的区块链节点软件。它验证 snarkVM 生成的证明，运行 AleoBFT 共识协议，并维护分布式账本。
+
+snarkOS 支持三种节点模式：
+
+| 模式 | 角色 |
+|------|------|
+| **Validator（验证者）** | 验证证明、产生区块、参与共识 |
+| **Prover（证明者）** | 解决难题以获得 coinbase 奖励 |
+| **Client（客户端）** | 提供区块链数据和转发交易 |
