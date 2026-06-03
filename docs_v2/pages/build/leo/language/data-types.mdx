@@ -1,7 +1,355 @@
 ---
-title: Data Types
+title: 数据类型
 ---
 
-# Data Types
+# 数据类型
 
-TODO: Add Leo data types content.
+Leo 是一门 statically typed language（静态类型语言）。每个变量、函数参数和返回值的类型都必须在编译期确定。
+
+```leo id="data-types-explicit"
+let enabled: bool = true;
+let amount: u64 = 100u64;
+let receiver: address = aleo1rhgdu77hgyppd5ysjmzyfqxm6gp9lhsg53h5knm0kguz4yq9e5gqv54h4k;
+```
+
+Leo 没有 `null` 或 `undefined`。变量声明时必须有明确的值，函数输出也必须匹配签名中声明的类型。
+
+## Primitive Types（基础类型）
+
+### `bool`
+
+`bool` 表示布尔值，只能是 `true` 或 `false`。
+
+```leo id="data-types-bool"
+let is_member: bool = true;
+let can_claim: bool = false;
+```
+
+### Integer Types（整数类型）
+
+Leo 支持 signed integers（有符号整数）和 unsigned integers（无符号整数）：
+
+| 类型 | 取值范围 |
+| --- | --- |
+| `u8` | `0` 到 `2^8 - 1` |
+| `u16` | `0` 到 `2^16 - 1` |
+| `u32` | `0` 到 `2^32 - 1` |
+| `u64` | `0` 到 `2^64 - 1` |
+| `u128` | `0` 到 `2^128 - 1` |
+| `i8` | `-2^7` 到 `2^7 - 1` |
+| `i16` | `-2^15` 到 `2^15 - 1` |
+| `i32` | `-2^31` 到 `2^31 - 1` |
+| `i64` | `-2^63` 到 `2^63 - 1` |
+| `i128` | `-2^127` 到 `2^127 - 1` |
+
+整数 literal（字面量）需要带类型后缀：
+
+```leo id="data-types-integers"
+let small: u8 = 10u8;
+let votes: u64 = 1_000_000u64;
+let delta: i32 = -5i32;
+```
+
+不同整数类型不会自动混用。需要在表达式中使用同一种类型，或者显式 cast（类型转换）。
+
+```leo id="data-types-integer-cast"
+let a: u8 = 10u8;
+let b: u32 = 20u32;
+let sum: u32 = a as u32 + b;
+```
+
+更大的整数通常会带来更多约束，因此在能够表达业务含义的前提下，优先选择较小的整数类型。
+
+### `field`
+
+`field` 表示有限域元素，是 Leo 中最基础、最常用的密码学数值类型之一。它适合表示哈希输入、承诺输入、算术电路中的基础元素等。
+
+```leo id="data-types-field"
+let value: field = 123field;
+let hash_input: field = 987654321field;
+```
+
+`field` 不是普通大整数。它的运算发生在 Aleo 使用的有限域中，因此会按域大小取模。
+
+### `group`
+
+`group` 表示椭圆曲线群元素，常用于 cryptographic operations（密码学操作）。
+
+```leo id="data-types-group"
+let generator: group = group::GEN;
+let point: group = 2group;
+```
+
+### `scalar`
+
+`scalar` 表示标量域元素，常用于与 `group` 相关的密码学计算。
+
+```leo id="data-types-scalar"
+let n: scalar = 42scalar;
+```
+
+### `address`
+
+`address` 表示 Aleo 地址。地址通常用于账户、record owner（记录所有者）、mapping key 等场景。
+
+```leo id="data-types-address"
+let owner: address = aleo1rhgdu77hgyppd5ysjmzyfqxm6gp9lhsg53h5knm0kguz4yq9e5gqv54h4k;
+```
+
+### `signature`
+
+`signature` 表示 Aleo 签名。它通常和 `address` 一起用于验证某个消息是否由对应账户签署。
+
+```leo id="data-types-signature"
+fn verify_message(owner: address, sig: signature, message: field) -> bool {
+    return sig.verify(owner, message);
+}
+```
+
+## Literal Suffixes（字面量后缀）
+
+Leo 的 numeric literals（数值字面量）通常需要显式类型后缀。这样编译器可以直接知道字面量的类型。
+
+```leo id="data-types-suffixes"
+let a: u32 = 1u32;
+let b: i64 = -10i64;
+let c: field = 100field;
+let d: scalar = 7scalar;
+let e: group = 3group;
+```
+
+布尔值、地址和签名不使用这种数字后缀形式。
+
+## Arrays（数组）
+
+Leo 支持 fixed-size arrays（固定长度数组）。数组类型需要同时写出元素类型和长度，长度必须在编译期确定。
+
+```leo id="data-types-arrays"
+let scores: [u32; 3] = [10u32, 20u32, 30u32];
+let first: u32 = scores[0u8];
+```
+
+数组索引需要是整数类型的表达式。固定索引常见写法是 `0u8`、`1u8` 这样的带后缀字面量。
+
+数组可以嵌套，也可以包含 structs（结构体）。
+
+```leo id="data-types-nested-arrays"
+let matrix: [[u32; 2]; 2] = [
+    [1u32, 2u32],
+    [3u32, 4u32],
+];
+```
+
+Leo 不支持 dynamic arrays（动态数组），也没有 `push`、`pop` 或运行时扩容。
+
+## Tuples（元组）
+
+Tuple（元组）可以把固定数量、固定类型的值组合在一起。元组类型使用圆括号声明。
+
+```leo id="data-types-tuples"
+let pair: (address, u64) = (
+    aleo1rhgdu77hgyppd5ysjmzyfqxm6gp9lhsg53h5knm0kguz4yq9e5gqv54h4k,
+    100u64,
+);
+```
+
+函数可以返回 tuple，适合返回少量相关值。
+
+```leo id="data-types-return-tuple"
+fn split_amount(amount: u64) -> (u64, u64) {
+    let half: u64 = amount / 2u64;
+    return (half, amount - half);
+}
+```
+
+## Structs（结构体）
+
+`struct` 用来定义由多个字段组成的数据结构。结构体声明在 `program {}` 块外部或内部的顶层位置，字段使用 `name: type` 形式。
+
+```leo id="data-types-struct"
+struct Vote {
+    voter: address,
+    proposal: field,
+    weight: u64,
+}
+
+fn new_vote(voter: address, proposal: field, weight: u64) -> Vote {
+    return Vote {
+        voter,
+        proposal,
+        weight,
+    };
+}
+```
+
+访问字段时使用点号：
+
+```leo id="data-types-struct-field"
+fn vote_weight(vote: Vote) -> u64 {
+    return vote.weight;
+}
+```
+
+结构体可以嵌套：
+
+```leo id="data-types-nested-struct"
+struct Metadata {
+    created_at: u32,
+    tag: field,
+}
+
+struct Proposal {
+    id: field,
+    metadata: Metadata,
+}
+```
+
+## Records（记录）
+
+`record` 是 Leo 中用于 private state（私有状态）的核心类型。record 会被拥有者持有，常用于 token、票据、凭证、私有余额等场景。
+
+每个 record 都必须包含 `owner: address` 字段。
+
+```leo id="data-types-record"
+record Token {
+    owner: address,
+    amount: u64,
+}
+
+program private_token.aleo {
+    fn mint(receiver: address, amount: u64) -> Token {
+        return Token {
+            owner: receiver,
+            amount,
+        };
+    }
+}
+```
+
+record 字段可以使用 visibility（可见性）修饰：
+
+```leo id="data-types-record-visibility"
+record Badge {
+    owner: address,
+    public level: u8,
+    private secret: field,
+}
+```
+
+- `public` 字段会公开出现在链上。
+- `private` 字段只对 record owner 可见。
+- 如果没有显式写出可见性，字段默认为 private。
+
+record 经常作为函数输入被消耗，并产生新的 record 作为输出。
+
+```leo id="data-types-record-transfer"
+record Token {
+    owner: address,
+    amount: u64,
+}
+
+program private_token.aleo {
+    fn transfer(input: Token, receiver: address, amount: u64) -> (Token, Token) {
+        let remaining: Token = Token {
+            owner: input.owner,
+            amount: input.amount - amount,
+        };
+
+        let output: Token = Token {
+            owner: receiver,
+            amount,
+        };
+
+        return (remaining, output);
+    }
+}
+```
+
+## Mappings（映射）
+
+`mapping` 用于 public onchain state（公开链上状态）。它是链上的 key-value storage（键值存储），通常在 `final {}` 块中读取或修改。
+
+```leo id="data-types-mapping"
+mapping balances: address => u64;
+
+program public_balance.aleo {
+    fn deposit(public amount: u64) -> Final {
+        return final {
+            let current: u64 = Mapping::get_or_use(balances, self.caller, 0u64);
+            Mapping::set(balances, self.caller, current + amount);
+        };
+    }
+}
+```
+
+常见 mapping 操作包括：
+
+| 操作 | 作用 |
+| --- | --- |
+| `Mapping::get(mapping, key)` | 读取已存在的值 |
+| `Mapping::get_or_use(mapping, key, default)` | 读取值，不存在时使用默认值 |
+| `Mapping::set(mapping, key, value)` | 设置 key 对应的值 |
+| `Mapping::contains(mapping, key)` | 检查 key 是否存在 |
+| `Mapping::remove(mapping, key)` | 删除 key 对应的值 |
+
+## Optional Types（可选类型）
+
+Optional type（可选类型）表示一个值可能存在，也可能不存在。语法是在类型后加 `?`。
+
+```leo id="data-types-optional"
+let maybe_amount: u64? = 10u64?;
+let nothing: u64? = none;
+```
+
+可选类型适合表达“可能没有结果”的情况，例如查找、解析或条件返回。
+
+## Type Casting（类型转换）
+
+使用 `as` 可以进行显式类型转换。
+
+```leo id="data-types-casting"
+let small: u8 = 255u8;
+let large: u32 = small as u32;
+```
+
+并不是所有转换都一定安全。如果转换会丢失信息或超出目标类型范围，程序会在编译或执行阶段失败。
+
+```leo id="data-types-casting-range"
+let value: u16 = 300u16;
+let narrowed: u8 = value as u8;
+```
+
+在实际开发中，应该尽量让表达式两侧使用相同类型，只在边界处进行必要转换。
+
+## Pass By Value（按值传递）
+
+Leo 中的值按 value semantics（值语义）传递。把值传给函数、赋给另一个变量，或放入结构体时，语义上都是复制该值，而不是共享引用。
+
+```leo id="data-types-value-semantics"
+fn add_one(value: u32) -> u32 {
+    return value + 1u32;
+}
+
+program value_semantics.aleo {
+    fn main() -> (u32, u32) {
+        let original: u32 = 10u32;
+        let updated: u32 = add_one(original);
+        return (original, updated);
+    }
+}
+```
+
+Leo 没有 Solidity 里的 `storage`、`memory`、`calldata` 这类引用位置概念。数据如何进入链上状态，主要由 record、mapping 和函数可见性共同决定。
+
+## Unsupported Types（不支持的类型）
+
+Leo 当前不支持一些常见的动态或高级类型：
+
+- `string`
+- `bytes`
+- dynamic arrays（动态数组）
+- `enum`
+- `null` / `undefined`
+- pointer 或 reference type（指针或引用类型）
+
+如果需要表达文本、动态数据或复杂枚举，通常会把数据编码为 `field`、固定长度数组、`struct`，或使用常量配合整数标签来表达。
