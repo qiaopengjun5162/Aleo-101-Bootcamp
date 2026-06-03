@@ -2,6 +2,62 @@
 title: Fmt
 ---
 
-# Fmt
+# `leo fmt`
 
-TODO: Add Leo CLI fmt content.
+:::info
+`leo-fmt` 以 **plugin** 形式分发，而不是 Leo 内置命令。运行 `leo fmt` 时，Leo CLI 会委托给你 `PATH` 中的 `leo-fmt` 二进制文件。你也可以直接运行 `leo-fmt`。
+:::
+
+`leo fmt` 用来格式化 Leo 源文件，会自动格式化项目中的 `.leo` 文件。
+
+```bash
+leo fmt
+```
+
+默认情况下，`leo fmt` 会格式化 `src/` 目录下的所有 `.leo` 文件。成功时不会输出内容。
+
+也可以指定要格式化的文件或目录：
+
+```bash
+leo fmt src/main.leo
+```
+
+## 安装
+
+可以和 Leo 一起安装 `leo-fmt`：
+
+```bash
+cargo install leo-fmt
+```
+
+预构建二进制文件可以从 [Leo releases](https://github.com/ProvableHQ/leo/releases) 下载。发布包通常会把 `leo-fmt` 和主 `leo` 二进制文件一起包含进去。
+
+:::note
+Plugin 分发方式仍在演进中。基于 tag 的发布和 `cargo binstall` 支持正在推进。最新进展可参考 [Leo #29355](https://github.com/ProvableHQ/leo/pull/29355)。
+:::
+
+验证 plugin 是否已安装并能被 Leo 发现：
+
+```bash
+leo plugins
+```
+
+## Check 模式
+
+使用 `--check` 可以只检查文件格式是否正确，不修改文件。若发现未格式化的文件，它会输出彩色 diff，并以退出码 1 结束：
+
+```bash
+leo fmt --check
+```
+
+### 参数
+
+#### `--check`
+
+#### `-c`
+
+检查文件是否已格式化，但不修改文件。如果有文件需要格式化，会打印 diff 并以退出码 1 结束。
+
+#### `[PATH]...`
+
+要格式化的文件或目录。未指定时，默认使用项目的 `src/` 目录。

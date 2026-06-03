@@ -2,6 +2,214 @@
 title: Execute
 ---
 
-# Execute
+# `leo execute`
 
-TODO: Add Leo CLI execute content.
+`leo execute` 用来执行入口函数。它与 [`leo run`](/build/leo/cli/run) 的区别是：`execute` 会生成执行证明和交易，并且可以选择广播到网络。
+
+从命令行传入函数名和输入参数：
+
+```bash
+leo execute <FUNCTION_NAME> <INPUTS>
+```
+
+其中 `<FUNCTION_NAME>` 是要执行的入口 `fn` 名称，`<INPUTS>` 是用空格分隔的输入列表。
+
+:::note
+这个命令需要有可支付费用的账户。
+:::
+
+在底层，`leo execute` 会合成程序电路，并生成 proving key 和 verifying key。
+
+```bash title="sample output:"
+       Leo     ... statements before dead code elimination.
+       Leo     ... statements after dead code elimination.
+       Leo     The program checksum is: '[...]'.
+       Leo ✅ Compiled '{PROGRAM_NAME}.aleo' into Aleo instructions.
+
+📢 Using the following consensus heights: 0,2950000,4800000,6625000,6765000,7600000,8365000,9173000,9800000
+  To override, pass in `--consensus-heights` or override the environment variable `CONSENSUS_VERSION_HEIGHTS`.
+
+Attempting to determine the consensus version from the latest block height at {ENDPOINT}...
+
+🚀 Execution Plan Summary
+──────────────────────────────────────────────
+🔧 Configuration:
+  Private Key:        {PRIVATE_KEY}
+  Address:            {ADDRESS}
+  Endpoint:           {ENDPOINT}
+  Network:            {NETWORK}
+  Consensus Version:  {CONSENSUS_VERSION}
+
+🎯 Execution Target:
+  Program:        {PROGRAM_NAME}.aleo
+  Function:       {FUNCTION_NAME}
+  Source:         remote
+
+💸 Fee Info:
+  Priority Fee:   {PRIORITY_FEE} μcredits
+  Fee Record:     no (public fee) | {FEE_RECORD}
+
+⚙️ Actions:
+  - Program and its dependencies will be downloaded from the network.
+  - Transaction will NOT be printed to the console.
+  - Transaction will NOT be saved to a file.
+  - Transaction will NOT be broadcast to the network.
+
+📊 Execution Summary for {PROGRAM_NAME}.aleo
+──────────────────────────────────────────────
+💰 Cost Breakdown (credits)
+  Transaction Storage:  ...
+  On-chain Execution:   ...
+  Priority Fee:         ...
+  Total Fee:            ...
+──────────────────────────────────────────────
+
+➡️  Outputs
+
+ • {OUTPUT_0}
+ • {OUTPUT_1}
+ ...
+```
+
+更多执行流程可参考 [Executing 指南](/build/leo/guides/executing)。
+
+## 参数
+
+### `--private-key <PRIVATE_KEY>`
+
+指定执行和付费使用的 private key。它会覆盖手动设置或 `.env` 文件中的 `$PRIVATE_KEY` 环境变量。
+
+### `--network <NETWORK>`
+
+指定目标网络。它会覆盖手动设置或 `.env` 文件中的 `NETWORK` 环境变量。可用网络包括 `testnet`、`mainnet` 和 `canary`。
+
+### `--endpoint <ENDPOINT>`
+
+指定目标 endpoint。它会覆盖手动设置或 `.env` 文件中的 `ENDPOINT` 环境变量。
+
+常见 endpoint：
+
+| Network | Endpoint |
+| :---: | :---: |
+| Devnet (local) | `https://localhost:3030` |
+| Testnet | `https://api.explorer.provable.com/v1` |
+| Mainnet | `https://api.explorer.provable.com/v1` |
+
+### `--network-retries <N>`
+
+临时网络传输失败时的重试次数，使用指数退避（1 秒、2 秒、4 秒……最高 64 秒）。它会覆盖 `NETWORK_RETRIES` 环境变量，默认值为 `2`。HTTP 错误（4xx/5xx）和 broadcast 调用不会重试。
+
+### `--devnet`
+
+指定目标网络是否为 devnet。未设置时，默认读取 `DEVNET` 环境变量。
+
+:::info
+这个参数要求本地已经运行 devnet。
+:::
+
+### `-print`
+
+以 JSON 格式把交易打印到终端或 stdout。
+
+### `-broadcast`
+
+执行成功后把交易广播到网络。如果不传这个参数，交易只会在本地生成，不会上链。
+
+### `--save <SAVE>`
+
+把交易保存到 `<SAVE>` 指定的目录。
+
+### `--yes`
+
+### `-y`
+
+部署和执行流程中，CLI 会在多个步骤请求手动确认。设置该参数会自动同意所有确认。
+
+:::warning
+除非你明确知道自己在做什么，否则不要使用这个功能。
+:::
+
+### `--priority-fees <PRIORITY_FEES>`
+
+指定交易的优先费用。多个费用用 `|` 分隔并按顺序使用，单位是 microcredits。每一项必须是有效的 `u64` 或 `default`，默认值是 0。
+
+:::tip
+1 Credit = 1,000,000 Microcredits。
+:::
+
+### `--fee-records <FEE_RECORDS>`
+
+### `-f <FEE_RECORDS>`
+
+指定用来私密支付费用的 record。多个 record 用 `|` 分隔并按顺序使用。费用 record 必须是有效的 plaintext、ciphertext 或 `default`。如果不指定，交易费用会公开支付。
+
+### `--with <WITH>...`
+
+指定一个或多个运行时额外加载到 VM 的程序。每一项可以是：
+
+- 本地 `.aleo` 字节码文件路径，例如 `./extra_prog.aleo`。
+- 要从网络 endpoint 获取的远程程序名称，并包含它的传递依赖。
+
+可以用逗号分隔多个程序。指定本地 `.aleo` 文件时，必须按拓扑顺序排列，也就是依赖要放在依赖它的程序之前。
+
+当程序存在动态依赖，但这些依赖没有声明在 `program.json` 中、无法在构建时解析时，这个参数很有用。
+
+```bash
+leo execute <FUNCTION_NAME> <INPUTS> --with ./extra_prog.aleo
+leo execute <FUNCTION_NAME> <INPUTS> --with program1.aleo,program2.aleo
+```
+
+:::note
+加载远程程序时，必须设置 `--endpoint`。
+:::
+
+### `--consensus-heights <CONSENSUS_HEIGHTS>`
+
+指定 consensus heights，用 `,` 分隔。只有在自定义 devnet 中才需要设置。
+
+下面的例子会在 block 0 启用 `Consensus_V0`，在 block 1 启用 `Consensus_V1`，依此类推：
+
+```bash
+--consensus-heights 0,1,2,3....
+```
+
+### `--consensus-version <CONSENSUS_VERSION>`
+
+指定 consensus version。如果没有提供，CLI 会尝试从最新区块推断。
+
+### `--max-wait <MAX_WAIT>`
+
+搜索交易时等待新区块出现的秒数，默认是 8 秒。
+
+### `--blocks-to-check <BLOCKS_TO_CHECK>`
+
+搜索交易时检查的区块数量，默认是 12 个区块。
+
+```text
+Options:
+--base-fees <BASE_FEES>
+  [UNUSED] 基础费用，单位是 microcredits，用 `|` 分隔并按顺序使用。
+  每一项必须是有效的 `u64` 或 `default`。默认自动计算。
+--offline
+    启用离线模式。
+--enable-ast-spans
+    在 AST snapshots 中启用 spans。
+--enable-dce
+    启用编译器的 dead code elimination（死代码消除）。
+--conditional-block-max-depth <CONDITIONAL_BLOCK_MAX_DEPTH>
+    类型检查嵌套条件分支时允许的最大深度，默认是 10。
+--disable-conditional-branch-type-checking
+    在 finalize 作用域中禁用嵌套条件分支的类型检查。
+--enable-initial-ast-snapshot
+    在解析后立即写入一份 AST snapshot。
+--enable-all-ast-snapshots
+    为不同编译阶段写入所有 AST snapshots。
+--ast-snapshots <AST_SNAPSHOTS>...
+    用逗号分隔要捕获 AST snapshots 的编译 pass 列表。
+--build-tests
+    构建主程序和依赖时，也一起构建 tests。
+--no-cache
+    不使用依赖缓存。
+--no-local
+    不使用本地源码版本。
+```

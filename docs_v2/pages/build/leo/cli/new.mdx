@@ -2,6 +2,32 @@
 title: New
 ---
 
-# New
+# `leo new`
 
-TODO: Add Leo CLI new content.
+创建新项目：
+
+```bash
+leo new <NAME>
+```
+
+创建新库：
+
+```bash
+leo new --library <NAME>
+```
+
+有效的项目名和库名必须使用 snake_case：小写字母和数字用下划线分隔。该命令会创建一个以给定名称命名的新目录。
+
+项目结构细节可参考 [Project Layout](/build/leo/language/project-layout)。
+
+如果在 [workspace](/build/leo/language/project-layout/workspaces) 中运行 `leo new <NAME>`，新包会自动追加到外层的 `workspace.json` 中。具体行为可参考 workspace 文档中的添加成员说明。
+
+## 参数
+
+### `--library`
+
+创建 Leo 库，而不是程序。库提供可复用逻辑，可以通过 `leo add --local` 被其他 Leo 程序或库导入，但库本身不能独立部署或执行。生成的项目会包含一个 `tests/` 目录和起始测试文件。
+
+### `--workspace`
+
+创建 workspace 骨架，而不是创建包。生成目录中只包含一个 `workspace.json`，里面有空的 `members` 数组。你可以手动列出成员路径或 glob，也可以在 workspace 内继续运行 `leo new` 来填充成员。该参数不能和 `--library` 同时使用。
