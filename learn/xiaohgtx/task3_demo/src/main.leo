@@ -13,14 +13,18 @@ program private_notes.aleo {
         created_at: u64,
     }
 
-    // 创建新笔记的 transition
-    transition create_note(
+    // 构造函数：部署时执行一次，@noupgrade 表示合约不可升级
+    @noupgrade
+    constructor() {}
+
+    // 创建新笔记的 function
+    fn create_note(
         owner: address,
         title_hash: field,
         content_commitment: field,
         created_at: u64,
     ) -> Note {
-        // transition 返回的新 Note 是私有 record，后续只有 owner 能消费
+        // function 返回的新 Note 是私有 record，后续只有 owner 能消费
         return Note {
             owner,
             title_hash,
@@ -29,8 +33,8 @@ program private_notes.aleo {
         };
     }
 
-    // 查看笔记承诺值的 transition（不暴露原始内容）
-    transition view_note_commitment(note: Note) -> field {
+    // 查看笔记承诺值的 function（不暴露原始内容）
+    fn view_note_commitment(note: Note) -> field {
         // 这里不会揭示原始笔记内容，只返回承诺值用于外部核对
         return note.content_commitment;
     }
