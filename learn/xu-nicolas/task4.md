@@ -31,7 +31,7 @@ Aleo Private Quest Board
 ## 链上交互记录
 
 - Transaction ID: `at1ymg4chr7axfcalt2wvck9ujdq9d2gw20a0684sdzj9and5yw0g9s8hsuvc`
-- Explorer URL: `https://explorer.provable.com/transaction/at1ymg4chr7axfcalt2wvck9ujdq9d2gw20a0684sdzj9and5yw0g9s8hsuvc?network=testnet`
+- Explorer URL: `https://testnet.explorer.provable.com/transaction/at1ymg4chr7axfcalt2wvck9ujdq9d2gw20a0684sdzj9and5yw0g9s8hsuvc`
 - API 验证地址: `https://api.explorer.provable.com/v1/testnet/transaction/at1ymg4chr7axfcalt2wvck9ujdq9d2gw20a0684sdzj9and5yw0g9s8hsuvc`
 
 交易内容包含：
