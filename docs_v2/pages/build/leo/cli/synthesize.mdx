@@ -2,6 +2,43 @@
 title: Synthesize
 ---
 
-# Synthesize
+# `leo synthesize`
 
-TODO: Add Leo CLI synthesize content.
+该命令用于为本地或远程 Leo 程序中的所有 Transition（状态转变）生成证明密钥（proving key）和验证密钥（verifying key），同时生成电路元数据（metadata）。
+
+该命令的每项输出内容包括：
+
+- 公共输入（public inputs）的数量
+- 变量（variables）的数量
+- 约束（constraints）的数量
+- 矩阵中的非零项（Non-zero entries）
+- 电路 ID（Circuit ID）
+- 保存到磁盘的证明密钥与验证密钥
+
+这有助于更好地了解程序规模并进行密钥管理。
+
+## 参数说明
+
+### `--network <NETWORK>`
+
+指定要部署到的网络。此选项会覆盖手动设置或在 `.env` 文件中设置的任何 `NETWORK` 环境变量。有效的网络名称包括 `testnet`、`mainnet` 和 `canary`。
+
+### `--endpoint <ENDPOINT>`
+
+指定要部署到的端点地址。此选项会覆盖手动设置或在 `.env` 文件中设置的任何 `ENDPOINT` 环境变量。
+
+### `--local`
+
+### `-l`
+
+指定应为当前工作目录下的本地 Leo 项目生成密钥。
+
+### --skip <SKIP>`
+
+### `-s <SKIP>`
+
+指定跳过任何函数名中包含指定子字符串的密钥生成。
+
+### `--save <SAVE_DIRECTORY>`
+
+密钥文件保存的目录。如果指定的路径不存在，系统将在你当前的工作目录下自动创建该目录。

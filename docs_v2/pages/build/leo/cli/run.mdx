@@ -2,6 +2,85 @@
 title: Run
 ---
 
-# Run
+# `leo run`
 
-TODO: Add Leo CLI run content.
+你可以使用 `leo run` 命令来运行一个入口函数（entry function）。该命令只会简单地使用输入的参数来运行指定的入口函数，并展示其输出结果。它不会生成执行的零知识证明（zero-knowledge proof）或交易，也不会在链上（onchain）运行任何内容。如需进行上述操作，请参阅 `leo execute` 命令。
+
+若要在命令行中输入参数来运行 Leo 入口函数，请执行以下命令：
+
+```bash
+leo run <FUNCTION_NAME> <INPUTS>
+```
+
+其中 `<FUNCTION_NAME>` 是要运行的入口 `函数` 名称， `<INPUTS>` 是该程序的输入参数列表，多个参数之间用空格分隔。
+
+该命令不会编译（合成）程序电路（circuit），也不会生成证明密钥（proving key）和验证密钥（verifying key）。
+
+
+## sample output:
+
+```bash
+       Leo     ... statements before dead code elimination.
+       Leo     ... statements after dead code elimination.
+       Leo     The program checksum is: '[...]'.
+       Leo ✅ Compiled '{PROGRAM_NAME}.aleo' into Aleo instructions.
+
+⛓  Constraints
+
+ •  '{PROGRAM_NAME}.aleo::{FUNCTION_NAME}' - ... constraints (called 1 time)
+
+➡️  Outputs
+
+ • {OUTPUT_0}
+ • {OUTPUT_1}
+ ...
+```
+
+如果你的输入参数中包含一个或多个负数（即以 `-` 开头），你可以使用 `--` 将命令选项与参数分隔开，以防止命令行解析器将其误识别为命令的选项（options）：
+
+```bash
+leo run <FUNCTION_NAME> -- <INPUT_0> -- <INPUT_1> ...
+```
+
+## 参数说明
+
+```bash
+--offline
+    Enables offline mode.
+--enable-ast-spans
+    Enable spans in AST snapshots.
+--enable-dce
+    Enables dead code elimination in the compiler.
+--conditional-block-max-depth <CONDITIONAL_BLOCK_MAX_DEPTH>
+    Max depth to type check nested conditionals. [default: 10]
+--disable-conditional-branch-type-checking
+    Disable type checking of nested conditional branches in finalize scope.
+--enable-initial-ast-snapshot
+    Write an AST snapshot immediately after parsing.
+--enable-all-ast-snapshots
+    Writes all AST snapshots for the different compiler phases.
+--ast-snapshots <AST_SNAPSHOTS>...
+    Comma separated list of passes whose AST snapshots to capture.
+--build-tests
+    Build tests along with the main program and dependencies.
+--no-cache
+    Don't use the dependency cache.
+--no-local
+    Don't use the local source code.
+--private-key <PRIVATE_KEY>
+    The private key to use for the deployment. Overrides the `PRIVATE_KEY` environment variable.
+--network <NETWORK>
+    The network to deploy to. Overrides the `NETWORK` environment variable.
+--endpoint <ENDPOINT>
+    The endpoint to deploy to. Overrides the `ENDPOINT` environment variable.
+--devnet
+    Whether the network is a devnet. If not set, defaults to the `DEVNET` environment variable.
+--consensus-heights <CONSENSUS_HEIGHTS>
+    Optional consensus heights to use. This should only be set if you are using a custom devnet.
+--with <WITH>...
+    Comma-separated list of additional programs to load into the VM at runtime.
+    Each entry can be a path to a local `.aleo` bytecode file or the name of a
+    remote program to fetch (with its transitive dependencies) from the network
+    endpoint. Local files must be listed in topological order (dependencies
+    before the programs that depend on them).
+```

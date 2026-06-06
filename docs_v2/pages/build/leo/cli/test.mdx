@@ -2,6 +2,44 @@
 title: Test
 ---
 
-# Test
+# `leo test`
 
-TODO: Add Leo CLI test content.
+该命令会运行 `tests/` 目录下的 Leo 文件中所指定的所有测试用例。
+
+如果你想运行一组特定的测试，请执行以下命令：
+
+```bash
+leo test <TEST_NAME>
+```
+
+其中 `<TEST_NAME>` 是用于匹配每个测试限定名的字符串。
+
+欲了解更多信息，请参阅 `测试指南` 。
+
+## 参数说明
+```bash
+--offline
+    Enables offline mode.
+--enable-ast-spans
+    Enable spans in AST snapshots.
+--enable-dce
+    Enables dead code elimination in the compiler.
+--conditional-block-max-depth <CONDITIONAL_BLOCK_MAX_DEPTH>
+    Max depth to type check nested conditionals. [default: 10]
+--disable-conditional-branch-type-checking
+    Disable type checking of nested conditional branches in finalize scope.
+--enable-initial-ast-snapshot
+    Write an AST snapshot immediately after parsing.
+--enable-all-ast-snapshots
+    Writes all AST snapshots for the different compiler phases.
+--ast-snapshots <AST_SNAPSHOTS>...
+    Comma separated list of passes whose AST snapshots to capture.
+--build-tests
+    Build tests along with the main program and dependencies.
+--prove
+    Generate a full ZK proof for each executed transaction. Proof generation is disabled by default to keep test runs fast.
+--no-cache
+    Don't use the dependency cache.
+--no-local
+    Don't use the local source code.
+```
