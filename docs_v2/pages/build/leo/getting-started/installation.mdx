@@ -2,6 +2,61 @@
 title: Installation
 ---
 
-# Installation
+# 安装指南 (Installation)
+
+根据您的平台和个人偏好，有多种方式可以安装 Leo。请任选其一！
+
+## Cargo
+
+### 安装 Cargo
+安装 Cargo 最简单的方法就是安装最新稳定版本的 Rust。
+### 安装 Leo
+```
+cargo install leo-lang
+```
+此操作将在`~/.cargo/bin/leo`路径下生成可执行文件。
+## 预编译二进制文件 (Pre-Built Binaries)
+### MacOS (Apple Silicon 芯片):
+1.Download Leo for Apple Silicon (MacOS)https://github.com/ProvableHQ/leo/releases/download/leo-lang-v4.2.0/leo.zip
+
+2.解压 `.zip `压缩文件
+
+3.打开终端并进入解压后的目录。
+
+4.运行 `chmod +x leo` 命令以使该文件变为可执行文件
+
+5.将 `leo` 移动到 `/usr/local/bin` 路径下，以便在全局系统中使用。
+
+mv leo /usr/local/bin
+
+### 其他平台（Other Platforms）:
+
+Browse all Leo releases https://github.com/ProvableHQ/leo/releases
+
+## 源码编译安装（Build from Source）
+### 安装 Rust
+安装最新稳定版的 Rust。你可以通过运行以下命令来验证安装：
+```
+cargo --version
+```
+### 安装 Git
+安装最新版本的 Git。你可以通过运行以下命令来验证安装：
+```
+git --version
+```
+### 从源码构建 Leo
+```
+# 下载源码
+git clone https://github.com/ProvableHQ/leo
+cd leo
+
+# 构建并安装
+cargo install --path .
+```
+这将在` ~/.cargo/bin/leo` 路径下生成可执行文件。
+若要使用 Leo，请运行：
+```
+leo
+```
 
 TODO: Add Leo installation content.
