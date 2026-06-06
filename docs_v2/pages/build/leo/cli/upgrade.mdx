@@ -2,6 +2,126 @@
 title: Upgrade
 ---
 
-# Upgrade
+# `leo upgrade`
 
-TODO: Add Leo CLI upgrade content.
+升级已部署在网络上的程序。
+
+欲了解更多详情，请参阅《升级程序指南》（Upgrading Programs guide）。
+
+## 参数说明
+
+### `--private-key <PRIVATE_KEY>`
+
+指定用于部署的私钥。此选项会覆盖手动设置或在 `.env` 文件中设置的任何 `$PRIVATE_KEY` 环境变量。
+
+### `--network <NETWORK>`
+
+指定要部署到的网络。此选项会覆盖手动设置或在 `.env` 文件中设置的任何 `NETWORK` 环境变量。有效的网络名称包括 `testnet`、`mainnet` 和 `canary`。
+
+### `--endpoint <ENDPOINT>`
+
+指定要部署到的端点（endpoint）地址。此选项会覆盖手动设置或在 `.env` 文件中设置的任何 `ENDPOINT` 环境变量。
+
+**常用端点：**
+
+<!-- markdown-link-check-disable -->
+
+|      网络      |                   端点                   |
+| :------------: | :--------------------------------------: |
+| 开发网（本地） |        <https://localhost:3030>          |
+|    测试网      | <https://api.explorer.provable.com/v1>   |
+|    主网        | <https://api.explorer.provable.com/v1>   |
+
+### `--devnet`
+
+指定要部署到的网络是否为开发网（devnet）。如果未设置，将默认使用 DEVNET 环境变量的值。
+
+> **信息**
+>
+> 该标志（flag）要求在本地运行一个开发网（devnet）。欲了解更多信息，请参阅 [此处插入开发网指南链接]。
+
+### `-print`
+
+以 JSON 格式将交易信息打印到终端/标准输出（stdout）。
+
+### `-broadcast`
+
+执行成功后将交易广播到网络中。如果不传入该标志（flag），交易将仅在本地生成。
+
+### `--save <SAVE>`
+
+将交易保存到 `<SAVE>` 路径指定的目录下。
+
+### `--yes`
+### `-y`
+
+在整个部署过程中，命令行工具（CLI）会在多个步骤中要求手动确认。设置此标志将自动同意所有确认提示。
+
+> **警告**
+>
+> 除非你完全清楚自己在做什么，否则请勿使用此功能！
+
+### `--priority-fees <PRIORITY_FEES>`
+
+指定部署交易的优先费用（priority fee），多个费用之间用 `|` 分隔并按顺序使用。费用单位为 microcredits，且必须是有效的 `u64` 类型数据或设置为 default。默认值为 0。
+
+> **小提示**
+>
+> 1 Credit == 1,000,000 Microcredits
+
+### `--fee-records <FEE_RECORDS>`
+### `-f <FEE_RECORDS>`
+
+指定用于隐私支付手续费的 Record（凭证/记录），多个 Record 之间用 | 分隔并按顺序使用。这些凭证必须是有效的明文（plaintext）、密文（ciphertext）或设置为 default。如果未指定，交易手续费将以公开（public）方式支付。
+
+### `--consensus-heights <CONSENSUS_HEIGHTS>`
+
+指定要使用的共识高度（consensus heights），多个高度之间用 `,` 分隔。此选项仅在写自定义开发网（devnet）时才需要设置。
+
+以下操作将在第 0 个区块启用 Consensus_V0（共识版本 0），在第 1 个区块启用 Consensus_V1（共识版本 1），依此类推：
+
+```base
+--consensus-heights 0,1,2,3....
+```
+
+### `--consensus-version <CONSENSUS_VERSION>`
+
+指定要使用的共识版本。如果未提供，命令行工具（CLI）将尝试根据最新区块来确定该版本。
+
+### `--max-wait <MAX_WAIT>`
+
+指定在查询交易时，等待区块出现的时间（秒）。默认值为 8 秒。
+
+### `--blocks-to-check <BLOCKS_TO_CHECK>`
+
+指定在查询交易时要检索的区块数量。默认值为 12 个区块。
+
+```bash
+Options:
+--base-fees <BASE_FEES>
+  [UNUSED] Base fees in microcredits, delimited by `|`, and used in order. The fees must either be valid `u64` or `default`. Defaults to automatic calculation.
+--skip <SKIP>...
+  Skips the upgrade of any program that contains one of the given substrings.
+--offline
+    Enables offline mode.
+--enable-ast-spans
+    Enable spans in AST snapshots.
+--enable-dce
+    Enables dead code elimination in the compiler.
+--conditional-block-max-depth <CONDITIONAL_BLOCK_MAX_DEPTH>
+    Max depth to type check nested conditionals. [default: 10]
+--disable-conditional-branch-type-checking
+    Disable type checking of nested conditional branches in finalize scope.
+--enable-initial-ast-snapshot
+    Write an AST snapshot immediately after parsing.
+--enable-all-ast-snapshots
+    Writes all AST snapshots for the different compiler phases.
+--ast-snapshots <AST_SNAPSHOTS>...
+    Comma separated list of passes whose AST snapshots to capture.
+--build-tests
+    Build tests along with the main program and dependencies.
+--no-cache
+    Don't use the dependency cache.
+--no-local
+    Don't use the local source code.
+```

@@ -2,6 +2,40 @@
 title: Update
 ---
 
-# Update
+# `leo update`
 
-TODO: Add Leo CLI update content.
+若要下载并安装最新版本的 Leo，请执行：
+
+```bash
+leo update
+```
+
+### console output:
+
+```bash
+Checking target-arch... aarch64-apple-darwin
+Checking current version... v3.1.0
+Checking latest released version... v3.1.0
+       Leo
+Leo is already on the latest version
+```
+
+如果你想安装特定版本的 Leo，可以通过传入 `--name` 标志（flag）来实现：
+
+```bash
+leo update --name v3.0.0
+```
+
+## 参数说明
+
+### `--list`
+
+### `-l`
+
+列出所有可用的 Leo 版本。
+
+### `--name`
+
+### `-n`
+
+（可选）若你想安装特定版本的 Leo，可在此处指定版本名称（release name）。默认情况下，该命令将自动获取最新发布的版本。
