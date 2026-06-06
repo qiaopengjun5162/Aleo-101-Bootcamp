@@ -2,6 +2,61 @@
 title: Build
 ---
 
-# Build
+# `leo build`
 
-TODO: Add Leo CLI build content.
+若要将你的程序编译为 Aleo instructions，并验证它是否能够正确构建，请运行：
+
+```bash
+leo build
+```
+
+调用 `build` 命令后，Leo 会在项目目录中自动创建 `build/` 和 `output/` 文件夹。编译生成的 `.aleo` 文件位于 `build` 目录中。`output` 目录用于存放编译过程中产生的中间产物。
+
+控制台输出：
+
+```console
+  Leo       2 statements before dead code elimination.
+  Leo       2 statements after dead code elimination.
+  Leo       The program checksum is: '[...]'.
+  Leo ✅ Compiled '{PROGRAM_NAME}.aleo' into Aleo instructions.
+  Leo ✅ Generated ABI at 'build/abi.json'.
+```
+
+`build` 还会在 `build/abi.json` 生成一个 **ABI 文件**，用于描述程序的公共接口，包括 transitions、mappings 和 types。关于 ABI 格式和类型降级规范的详细信息，请参阅 [ABI Generation 指南](/build/leo/guides/abi)。
+
+## Flags
+
+```text
+--offline
+    启用离线模式。
+--enable-ast-spans
+    在 AST 快照中启用 spans。
+--enable-dce
+    在编译器中启用 dead code elimination（死代码消除）。
+--conditional-block-max-depth <CONDITIONAL_BLOCK_MAX_DEPTH>
+    对嵌套条件语句进行类型检查的最大深度。[default: 10]
+--disable-conditional-branch-type-checking
+    在 finalize 作用域中禁用嵌套条件分支的类型检查。
+--enable-initial-ast-snapshot
+    在解析完成后立即写入一份 AST 快照。
+--enable-all-ast-snapshots
+    为不同编译阶段写入所有 AST 快照。
+--ast-snapshots <AST_SNAPSHOTS>...
+    以逗号分隔的 pass 列表，用于指定需要捕获哪些 AST 快照。
+--build-tests
+    在构建主程序和依赖项的同时构建测试。
+--no-cache
+    不使用依赖缓存。
+--no-local
+    不使用本地源代码。
+--private-key <PRIVATE_KEY>
+    用于部署的私钥。会覆盖 `PRIVATE_KEY` 环境变量。
+--network <NETWORK>
+    要部署到的网络。会覆盖 `NETWORK` 环境变量。
+--endpoint <ENDPOINT>
+    要部署到的 endpoint。会覆盖 `ENDPOINT` 环境变量。
+--devnet
+    指定网络是否为 devnet。如果未设置，则默认使用 `DEVNET` 环境变量。
+--consensus-heights <CONSENSUS_HEIGHTS>
+    可选的 consensus heights。仅当你使用自定义 devnet 时才应设置此项。
+```
