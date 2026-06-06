@@ -4,7 +4,7 @@ title: Program
 
 ## 程序 (Program)
 
-程序是驻留在 Aleo 区块链上某个程序 ID（Program ID）处的代码（其函数）和数据（其类型）的集合。程序的声明格式为 program {name}.{network} { ... }。程序的主体由花括号 {} 括起来。
+程序是驻留在 Aleo 区块链上某个程序 ID（Program ID）处的代码（其函数）和数据（其类型）的集合。程序的声明格式为 `program {name}.{network} { ... }`。程序的主体由花括号 `{}` 括起来。
 ```
 import foo.aleo;
 
@@ -65,7 +65,7 @@ final 函数定义 (final fn definitions)
 
 ## 导入 (Imports)
 
-你可以导入已下载到 imports 目录中的依赖项。导入的声明格式为 import {filename}.aleo;。依赖解析器（Dependency resolver）会自动从网络或本地文件系统中拉取被导入的程序。
+你可以导入已下载到 imports 目录中的依赖项。导入的声明格式为 `import {filename}.aleo;`。依赖解析器（Dependency resolver）会自动从网络或本地文件系统中拉取被导入的程序。
 ```
 import foo.aleo; // Import all `foo.aleo` declarations into the `hello.aleo` program.
 
@@ -73,7 +73,7 @@ program hello.aleo { }
 ```
 ## 程序 ID (Program ID)
 
-程序 ID 的声明格式为 {name}.{network}。
+程序 ID 的声明格式为 `{name}.{network}`。
 
 名称（name）的首字符必须是小写字母。名称只能包含小写字母、数字和下划线，且不能包含双下划线（__）或关键字 aleo。
 
