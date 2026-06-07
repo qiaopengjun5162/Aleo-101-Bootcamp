@@ -1,0 +1,1 @@
+部署地址：https://testnet.aleoscan.io/program?id=private_note_codehmx.aleo
