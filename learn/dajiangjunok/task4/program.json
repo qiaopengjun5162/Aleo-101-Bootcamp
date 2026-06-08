@@ -1,0 +1,7 @@
+{
+  "program": "private_token_1lkp6q.aleo",
+  "version": "0.1.0",
+  "description": "A minimal Aleo private-record demo.",
+  "license": "MIT",
+  "dependencies": []
+}

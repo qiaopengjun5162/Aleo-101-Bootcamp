@@ -1,0 +1,17 @@
+build/
+target/
+node_modules/
+
+# Local Aleo/Leo tooling and generated files.
+bin/
+.aleo/
+.tmp/
+*.avm
+*.prover
+*.verifier
+
+# Secrets.
+.env
+
+# OS files.
+.DS_Store
